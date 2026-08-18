@@ -2,6 +2,8 @@ package br.edu.unex.sentinela.rendering;
 
 import br.edu.unex.sentinela.entity.Player;
 import br.edu.unex.sentinela.game.GameWorld;
+import br.edu.unex.sentinela.game.TileMap;
+import br.edu.unex.sentinela.game.TileType;
 import br.edu.unex.sentinela.telemetry.FrameMetrics;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -17,7 +19,12 @@ import javafx.scene.text.TextAlignment;
 public final class GameRenderer {
 
     private static final Color BACKGROUND = Color.web("#07111f");
-    private static final Color GRID_LINE = Color.web("#17304a", 0.48);
+    private static final Color LAB_FLOOR_COLOR = Color.web("#172b3b");
+    private static final Color WALL_COLOR = Color.web("#3c5266");
+    private static final Color WALL_DETAIL = Color.web("#62788b");
+    private static final Color EQUIPMENT_COLOR = Color.web("#713d4b");
+    private static final Color EQUIPMENT_LIGHT = Color.web("#e36d5b");
+    private static final Color TILE_LINE = Color.web("#24435a", 0.72);
     private static final Color BORDER = Color.web("#2d5577");
     private static final Color PRIMARY = Color.web("#38d9a9");
     private static final Color PRIMARY_DARK = Color.web("#126c60");
@@ -25,7 +32,6 @@ public final class GameRenderer {
     private static final Color MUTED_TEXT = Color.web("#91a9bd");
     private static final Color PANEL = Color.web("#0d1d2d", 0.92);
 
-    private static final double GRID_SIZE = 48.0;
     private static final double PANEL_X = 20.0;
     private static final double PANEL_Y = 20.0;
     private static final double PANEL_WIDTH = 224.0;
@@ -43,9 +49,10 @@ public final class GameRenderer {
 
     public void render(GameWorld world, FrameMetrics metrics) {
         clear();
-        drawGrid();
-        drawArenaBorder();
-        drawPlayer(world.player());
+        double mapX = Math.max(0.0, (viewportWidth() - world.tileMap().pixelWidth()) / 2.0);
+        double mapY = Math.max(0.0, (viewportHeight() - world.tileMap().pixelHeight()) / 2.0);
+        drawTileMap(world.tileMap(), mapX, mapY);
+        drawPlayer(world.player(), mapX, mapY);
         drawDebugPanel(world.player(), metrics);
         drawInstructions();
     }
@@ -64,27 +71,46 @@ public final class GameRenderer {
         graphics.fillRect(0.0, 0.0, viewportWidth(), viewportHeight());
     }
 
-    private void drawGrid() {
-        graphics.setStroke(GRID_LINE);
-        graphics.setLineWidth(1.0);
-
-        for (double x = 0.5; x < viewportWidth(); x += GRID_SIZE) {
-            graphics.strokeLine(x, 0.0, x, viewportHeight());
+    private void drawTileMap(TileMap tileMap, double mapX, double mapY) {
+        double tileSize = tileMap.tileSize();
+        for (int row = 0; row < tileMap.rows(); row++) {
+            for (int column = 0; column < tileMap.columns(); column++) {
+                double x = mapX + column * tileSize;
+                double y = mapY + row * tileSize;
+                drawTile(tileMap.tileAt(row, column), x, y, tileSize);
+            }
         }
-        for (double y = 0.5; y < viewportHeight(); y += GRID_SIZE) {
-            graphics.strokeLine(0.0, y, viewportWidth(), y);
-        }
-    }
 
-    private void drawArenaBorder() {
         graphics.setStroke(BORDER);
         graphics.setLineWidth(2.0);
-        graphics.strokeRect(1.0, 1.0, viewportWidth() - 2.0, viewportHeight() - 2.0);
+        graphics.strokeRect(mapX + 1.0, mapY + 1.0, tileMap.pixelWidth() - 2.0, tileMap.pixelHeight() - 2.0);
     }
 
-    private void drawPlayer(Player player) {
-        double x = player.x();
-        double y = player.y();
+    private void drawTile(TileType tileType, double x, double y, double size) {
+        Color tileColor = switch (tileType) {
+            case LAB_FLOOR -> LAB_FLOOR_COLOR;
+            case WALL -> WALL_COLOR;
+            case EQUIPMENT -> EQUIPMENT_COLOR;
+        };
+
+        graphics.setFill(tileColor);
+        graphics.fillRect(x, y, size, size);
+        graphics.setStroke(TILE_LINE);
+        graphics.setLineWidth(1.0);
+        graphics.strokeRect(x + 0.5, y + 0.5, size - 1.0, size - 1.0);
+
+        if (tileType == TileType.WALL) {
+            graphics.setFill(WALL_DETAIL);
+            graphics.fillRect(x + 5.0, y + 5.0, size - 10.0, 5.0);
+        } else if (tileType == TileType.EQUIPMENT) {
+            graphics.setFill(EQUIPMENT_LIGHT);
+            graphics.fillRoundRect(x + 8.0, y + 8.0, size - 16.0, size - 16.0, 5.0, 5.0);
+        }
+    }
+
+    private void drawPlayer(Player player, double mapX, double mapY) {
+        double x = mapX + player.x();
+        double y = mapY + player.y();
         double size = player.size();
         double antennaTop = Math.max(1.0, y - 10.0);
 
@@ -97,8 +123,8 @@ public final class GameRenderer {
 
         graphics.setStroke(TEXT);
         graphics.setLineWidth(2.0);
-        graphics.strokeLine(player.centerX(), y + 4.0, player.centerX(), antennaTop + 5.0);
-        graphics.strokeOval(player.centerX() - 2.5, antennaTop, 5.0, 5.0);
+        graphics.strokeLine(x + size / 2.0, y + 4.0, x + size / 2.0, antennaTop + 5.0);
+        graphics.strokeOval(x + size / 2.0 - 2.5, antennaTop, 5.0, 5.0);
     }
 
     private void drawDebugPanel(Player player, FrameMetrics metrics) {

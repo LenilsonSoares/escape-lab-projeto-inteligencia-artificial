@@ -12,6 +12,7 @@ public final class GameWorld {
     private static final double PLAYER_SPEED = 230.0;
 
     private final Player player;
+    private final TileMap tileMap;
 
     private double width;
     private double height;
@@ -19,26 +20,30 @@ public final class GameWorld {
     public GameWorld(double width, double height) {
         this.width = requirePositive(width, "width");
         this.height = requirePositive(height, "height");
+        this.tileMap = TileMap.createLaboratory();
         this.player = new Player(
-                (width - PLAYER_SIZE) / 2.0,
-                (height - PLAYER_SIZE) / 2.0,
+                tileMap.playerStartX(PLAYER_SIZE),
+                tileMap.playerStartY(PLAYER_SIZE),
                 PLAYER_SIZE,
                 PLAYER_SPEED
         );
     }
 
     public void update(double deltaTime, MovementInput movementInput) {
-        player.update(movementInput, deltaTime, width, height);
+        player.update(movementInput, deltaTime, tileMap);
     }
 
     public void resize(double width, double height) {
         this.width = requirePositive(width, "width");
         this.height = requirePositive(height, "height");
-        player.keepInside(width, height);
     }
 
     public Player player() {
         return player;
+    }
+
+    public TileMap tileMap() {
+        return tileMap;
     }
 
     public double width() {

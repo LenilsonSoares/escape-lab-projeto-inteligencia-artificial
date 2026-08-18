@@ -22,16 +22,32 @@ O Maven Wrapper baixa automaticamente o Maven e as dependências do JavaFX. Use 
 
 ## Situação atual
 
-A base da atividade de Game Loop foi reaproveitada. Ela já possui:
+Além da base do Game Loop, a atividade da Aula 03 — Criação de tilemap — está implementada com:
 
 - janela e Canvas em JavaFX;
 - Game Loop com delta time;
 - separação entre entrada, atualização e renderização;
-- jogador controlável;
+- jogador controlável por WASD ou setas;
+- mapa lógico de laboratório com 15 linhas e 15 colunas;
+- tiles de 40 pixels para piso, parede e equipamento;
+- corredores e obstáculos definidos na própria matriz;
+- posição inicial do jogador em um piso transitável;
+- desenho dos tiles antes do jogador;
+- colisão que considera o tamanho inteiro do jogador;
+- bloqueio de paredes, equipamentos e limites do mapa;
 - painel de depuração com posição, FPS e delta time;
 - testes automatizados.
 
-O próximo incremento é o mapa em tiles do laboratório, com terrenos, obstáculos e colisões.
+O piso azul-escuro é transitável. As paredes cinzas e os equipamentos vermelhos são bloqueados.
+
+## Testar a colisão manualmente
+
+1. Execute o jogo com `.\mvnw.cmd clean javafx:run`.
+2. Use WASD ou as setas para caminhar pelos corredores.
+3. Tente avançar contra uma parede cinza e contra um equipamento vermelho: o jogador deve parar antes de sobrepor o tile.
+4. Tente alcançar as bordas do laboratório: o jogador deve permanecer dentro da matriz.
+
+Esta atividade não inclui custos de movimento, busca de caminho, inimigos ou outros sistemas de IA das próximas aulas.
 
 ## Documentação
 

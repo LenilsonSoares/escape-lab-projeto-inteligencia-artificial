@@ -20,7 +20,7 @@ public final class GameApplication extends Application {
     private static final double INITIAL_WIDTH = 960.0;
     private static final double INITIAL_HEIGHT = 640.0;
     private static final double MIN_WIDTH = 720.0;
-    private static final double MIN_HEIGHT = 480.0;
+    private static final double MIN_HEIGHT = 680.0;
 
     private GameEngine gameEngine;
 

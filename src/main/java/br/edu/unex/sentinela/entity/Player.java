@@ -1,11 +1,14 @@
 package br.edu.unex.sentinela.entity;
 
+import br.edu.unex.sentinela.game.TileMap;
 import br.edu.unex.sentinela.input.MovementInput;
 
 /**
  * Entidade controlável do jogador.
  */
 public final class Player {
+
+    private static final double MAX_COLLISION_STEP = 1.0;
 
     private double x;
     private double y;
@@ -32,8 +35,7 @@ public final class Player {
     public void update(
             MovementInput input,
             double deltaTime,
-            double worldWidth,
-            double worldHeight
+            TileMap tileMap
     ) {
         if (!Double.isFinite(deltaTime) || deltaTime < 0.0) {
             throw new IllegalArgumentException("Delta time não pode ser negativo");
@@ -44,18 +46,34 @@ public final class Player {
         double directionLength = Math.hypot(horizontal, vertical);
 
         if (directionLength > 0.0) {
-            x += (horizontal / directionLength) * speed * deltaTime;
-            y += (vertical / directionLength) * speed * deltaTime;
+            double movementX = (horizontal / directionLength) * speed * deltaTime;
+            double movementY = (vertical / directionLength) * speed * deltaTime;
+            move(movementX, movementY, tileMap);
         }
-
-        keepInside(worldWidth, worldHeight);
     }
 
-    public void keepInside(double worldWidth, double worldHeight) {
-        double maximumX = Math.max(0.0, worldWidth - size);
-        double maximumY = Math.max(0.0, worldHeight - size);
-        x = Math.clamp(x, 0.0, maximumX);
-        y = Math.clamp(y, 0.0, maximumY);
+    private void move(double movementX, double movementY, TileMap tileMap) {
+        if (!Double.isFinite(movementX) || !Double.isFinite(movementY)) {
+            throw new IllegalArgumentException("O deslocamento do jogador deve ser finito");
+        }
+
+        double maximumStep = Math.min(MAX_COLLISION_STEP, tileMap.tileSize() / 2.0);
+        double longestMovement = Math.max(Math.abs(movementX), Math.abs(movementY));
+        int steps = Math.max(1, (int) Math.ceil(longestMovement / maximumStep));
+        double stepX = movementX / steps;
+        double stepY = movementY / steps;
+
+        for (int currentStep = 0; currentStep < steps; currentStep++) {
+            tryMoveTo(x + stepX, y, tileMap);
+            tryMoveTo(x, y + stepY, tileMap);
+        }
+    }
+
+    private void tryMoveTo(double nextX, double nextY, TileMap tileMap) {
+        if (tileMap.canOccupy(nextX, nextY, size, size)) {
+            x = nextX;
+            y = nextY;
+        }
     }
 
     public double x() {
