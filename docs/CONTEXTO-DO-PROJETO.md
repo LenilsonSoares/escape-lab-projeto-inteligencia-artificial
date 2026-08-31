@@ -2,7 +2,7 @@
 
 Este documento reúne as principais informações do projeto, o estado atual da implementação e os limites de escopo definidos para cada atividade da disciplina.
 
-Atualizado em: 18/08/2026.
+Atualizado em: 31/08/2026.
 
 ## 1. Identificação
 
@@ -44,6 +44,13 @@ O projeto utiliza IA clássica. Machine Learning é opcional e não faz parte do
 - Implementou matriz de tiles, tipos transitáveis e bloqueados, posição inicial, representação visual e colisões.
 - Os requisitos obrigatórios da Aula 03 estão implementados e testados.
 
+### Atividade 4 — Implementação do A*
+
+- Adicionou um robô autônomo ao laboratório sem remover o jogador manual.
+- Converteu os tiles transitáveis em nós ligados aos quatro vizinhos ortogonais.
+- Implementou o algoritmo A* no próprio projeto, sem biblioteca externa de busca.
+- Definiu início e destino fixos, caminho visível e parada ao concluir a rota.
+
 ## 4. Temática e elementos planejados
 
 O laboratório possui corredores, salas de pesquisa, depósitos, equipamentos, portas de segurança e áreas restritas. A ambientação representa um sistema de segurança fora de controle.
@@ -68,6 +75,8 @@ A aplicação possui:
 - movimento baseado em delta time;
 - controles por WASD e setas direcionais;
 - movimento diagonal normalizado;
+- robô autônomo orientado por A*;
+- rota e destino destacados no mapa;
 - painel de depuração com posição, FPS e delta time;
 - testes automatizados com JUnit 5.
 
@@ -136,9 +145,25 @@ Os limites físicos são definidos pelo tilemap, e não pelo tamanho da janela.
 - [x] Movimento baseado em delta time preservado.
 - [x] Separação entre entrada, atualização e renderização preservada.
 
-O desafio adicional de custo de movimento não foi implementado. A propriedade `movementCost` poderá ser adicionada quando for necessária para os conteúdos de navegação.
+O desafio adicional de custo de movimento não foi implementado. Nesta etapa, cada deslocamento ortogonal do A* possui custo 1.
 
-## 8. Arquitetura atual
+## 8. Navegação autônoma com A*
+
+O robô começa na linha 13, coluna 1, e possui como destino fixo a linha 1, coluna 13. As coordenadas usam índices iniciados em zero. A rota ótima atual contém 24 movimentos e 25 posições contando as duas extremidades.
+
+Cada tile com `walkable = true` funciona como um nó. As conexões possíveis são cima, direita, baixo e esquerda. Paredes, equipamentos e posições fora da matriz não participam do caminho.
+
+A heurística utilizada é a distância Manhattan:
+
+```text
+h = |linha atual - linha destino| + |coluna atual - coluna destino|
+```
+
+O `AStarPathfinder` usa custo uniforme 1, uma fila de prioridade e mapas da biblioteca padrão do Java. A rota inclui início e destino e é calculada uma única vez durante a criação do `GameWorld`.
+
+O `AutonomousAgent` percorre os pontos na ordem, centraliza-se em cada tile e consulta `canOccupy` antes de aceitar uma nova posição. Ao alcançar o destino, permanece parado. Obstáculos dinâmicos e recálculo de rota continuam fora do escopo atual.
+
+## 9. Arquitetura atual
 
 ```text
 br.edu.unex.sentinela
@@ -148,6 +173,7 @@ br.edu.unex.sentinela
 ├── core
 │   └── GameEngine
 ├── entity
+│   ├── AutonomousAgent
 │   └── Player
 ├── game
 │   ├── GameWorld
@@ -156,6 +182,9 @@ br.edu.unex.sentinela
 ├── input
 │   ├── InputManager
 │   └── MovementInput
+├── navigation
+│   ├── AStarPathfinder
+│   └── GridPosition
 ├── rendering
 │   └── GameRenderer
 └── telemetry
@@ -166,18 +195,21 @@ br.edu.unex.sentinela
 - `GameEngine`: executa o ciclo de entrada, atualização e renderização.
 - `InputManager`: captura o estado das teclas.
 - `MovementInput`: representa os eixos de movimento de um quadro.
-- `GameWorld`: mantém o mapa e o jogador.
+- `GameWorld`: mantém o mapa, o jogador, o robô e a rota calculada.
 - `TileMap`: armazena a matriz, dimensões, posição inicial e regras de ocupação.
 - `TileType`: informa o tipo do tile e sua transitabilidade.
 - `Player`: mantém posição, tamanho e velocidade e aplica o movimento com colisão.
-- `GameRenderer`: desenha o tilemap, o jogador e o painel de depuração.
+- `GridPosition`: representa uma posição por linha e coluna.
+- `AStarPathfinder`: calcula o menor caminho ortogonal com heurística Manhattan.
+- `AutonomousAgent`: percorre os pontos do caminho e para no destino.
+- `GameRenderer`: desenha o tilemap, a rota, o destino, os atores e o painel de depuração.
 - `FrameMetrics`: calcula FPS e registra o delta time.
 
-## 9. Testes automatizados
+## 10. Testes automatizados
 
-Validação realizada em 18/08/2026:
+Validação realizada em 31/08/2026:
 
-- 20 testes executados;
+- 34 testes executados;
 - 0 falhas;
 - 0 erros;
 - 0 testes ignorados;
@@ -186,12 +218,14 @@ Validação realizada em 18/08/2026:
 Distribuição atual:
 
 - `PlayerTest`: 8 testes de movimento, delta time, diagonal, limites e colisões.
-- `GameWorldTest`: 3 testes de posição inicial e dimensões da área visível.
+- `AutonomousAgentTest`: 5 testes de percurso, ordem, curvas, parada e validação da rota.
+- `GameWorldTest`: 5 testes de posição inicial, dimensões e integração do agente.
 - `TileMapTest`: 5 testes de matriz, tipos, transitabilidade, posição inicial e limites.
 - `MovementInputTest`: 2 testes dos eixos de movimento.
+- `AStarPathfinderTest`: 7 testes de menor rota, heurística, obstáculos, limites e casos sem solução.
 - `FrameMetricsTest`: 2 testes de delta time e FPS.
 
-## 10. Como executar
+## 11. Como executar
 
 Pré-requisito: JDK 21 ou superior configurado no `JAVA_HOME`.
 
@@ -213,13 +247,13 @@ Consultar alterações locais:
 git status
 ```
 
-## 11. Escopo das próximas aulas
+## 12. Escopo das próximas aulas
 
 Ainda não estão implementados:
 
 - custo de movimento por terreno;
-- algoritmos de busca, incluindo BFS e A*;
-- grafos e navegação autônoma;
+- outros algoritmos de busca, como BFS;
+- obstáculos dinâmicos e recálculo de rota;
 - inimigos funcionais;
 - visão, audição e investigação;
 - patrulha, perseguição e busca;
@@ -232,7 +266,7 @@ Ainda não estão implementados:
 
 Esses recursos devem ser adicionados somente quando forem trabalhados nas respectivas aulas.
 
-## 12. Repositórios
+## 13. Repositórios
 
 ### Prática de Game Loop
 
@@ -246,14 +280,14 @@ Esses recursos devem ser adicionados somente quando forem trabalhados nas respec
 - Endereço: <https://github.com/LenilsonSoares/escape-lab-projeto-inteligencia-artificial>.
 - Recebe as implementações do Escape Lab durante o semestre.
 
-## 13. Materiais de referência
+## 14. Materiais de referência
 
 - `Projeto-de-Inteligencia-Artificial.pdf`: visão geral e requisitos do semestre.
 - `Arquitetura-do-Jogo-e-Game-Loop.pdf`: conteúdo da Aula 02.
 - `Mapas-em-Tiles-Colisoes-e-Representacao-do-Ambiente.pdf`: grade, matriz, coordenadas, propriedades dos tiles, colisão e atividade da Aula 03.
 - `Projeto+Final+—+Temática+e+História+do+Jogo.pdf`: relatório de temática elaborado pela equipe.
 
-## 14. Orientações de continuidade
+## 15. Orientações de continuidade
 
 - Implementar apenas o conteúdo correspondente à atividade atual.
 - Manter o Game Loop e a separação entre entrada, atualização e renderização.
