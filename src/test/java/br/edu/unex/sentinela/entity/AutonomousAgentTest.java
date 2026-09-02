@@ -88,6 +88,70 @@ class AutonomousAgentTest {
     }
 
     @Test
+    void replacesPathWithoutTeleporting() {
+        TileMap tileMap = openMap(5, 5);
+        AutonomousAgent agent = new AutonomousAgent(
+                tileMap,
+                List.of(
+                        new GridPosition(2, 0),
+                        new GridPosition(2, 1),
+                        new GridPosition(2, 2)
+                ),
+                20.0,
+                40.0
+        );
+        agent.update(0.5);
+        double previousX = agent.x();
+        double previousY = agent.y();
+        List<GridPosition> newPath = List.of(
+                new GridPosition(2, 1),
+                new GridPosition(1, 1),
+                new GridPosition(1, 2)
+        );
+
+        agent.replacePath(newPath);
+
+        assertEquals(previousX, agent.x(), EPSILON);
+        assertEquals(previousY, agent.y(), EPSILON);
+        assertEquals(newPath, agent.path());
+        assertFalse(agent.hasReachedDestination());
+
+        agent.update(3.0);
+        assertPosition(agent, 90.0, 50.0);
+        assertTrue(agent.hasReachedDestination());
+    }
+
+    @Test
+    void stopsAndResumesWithAnotherPath() {
+        TileMap tileMap = openMap(3, 3);
+        AutonomousAgent agent = new AutonomousAgent(
+                tileMap,
+                List.of(
+                        new GridPosition(1, 0),
+                        new GridPosition(1, 1)
+                ),
+                20.0,
+                40.0
+        );
+
+        agent.stop();
+        agent.update(2.0);
+
+        assertTrue(agent.path().isEmpty());
+        assertFalse(agent.hasReachedDestination());
+        assertPosition(agent, 10.0, 50.0);
+
+        agent.replacePath(List.of(
+                new GridPosition(1, 0),
+                new GridPosition(0, 0)
+        ));
+        agent.update(1.0);
+
+        assertPosition(agent, 10.0, 10.0);
+        assertTrue(agent.hasReachedDestination());
+    }
+
+    @Test
     void rejectsRoutesWithBlockedOrNonAdjacentPoints() {
         TileType floor = TileType.LAB_FLOOR;
         TileType wall = TileType.WALL;

@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import br.edu.unex.sentinela.input.MovementInput;
+import br.edu.unex.sentinela.navigation.AStarPathfinder;
 import br.edu.unex.sentinela.navigation.GridPosition;
+import br.edu.unex.sentinela.navigation.Pathfinder;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -56,13 +58,19 @@ class GameWorldTest {
     }
 
     @Test
-    void createsValidRouteForAutonomousAgent() {
+    void createsValidRouteToInitialPlayerTile() {
         GameWorld world = new GameWorld(960.0, 640.0);
         List<GridPosition> path = world.navigationPath();
+        GridPosition initialPlayerTile = new GridPosition(
+                world.tileMap().playerStartRow(),
+                world.tileMap().playerStartColumn()
+        );
 
-        assertEquals(25, path.size());
+        assertFalse(path.isEmpty());
         assertEquals(new GridPosition(13, 1), path.get(0));
-        assertEquals(new GridPosition(1, 13), path.get(path.size() - 1));
+        assertEquals(initialPlayerTile, path.get(path.size() - 1));
+        assertEquals(initialPlayerTile, world.navigationDestination());
+        assertEquals(NavigationStatus.MOVING, world.navigationStatus());
         assertFalse(world.autonomousAgent().hasReachedDestination());
         assertTrue(world.tileMap().canOccupy(
                 world.autonomousAgent().x(),
@@ -73,11 +81,11 @@ class GameWorldTest {
     }
 
     @Test
-    void autonomousAgentStopsAtConfiguredDestination() {
+    void autonomousAgentStopsAtPlayerTile() {
         GameWorld world = new GameWorld(960.0, 640.0);
 
         for (int frame = 0;
-                frame < 1_000 && !world.autonomousAgent().hasReachedDestination();
+                frame < 1_000 && world.navigationStatus() == NavigationStatus.MOVING;
                 frame++) {
             world.update(1.0 / 60.0, MovementInput.NONE);
             assertTrue(world.tileMap().canOccupy(
@@ -91,11 +99,171 @@ class GameWorldTest {
         double destinationX = world.autonomousAgent().x();
         double destinationY = world.autonomousAgent().y();
         world.update(1.0, MovementInput.NONE);
+        GridPosition destination = world.navigationDestination();
+        double expectedX = destination.column() * world.tileMap().tileSize()
+                + (world.tileMap().tileSize() - world.autonomousAgent().size()) / 2.0;
+        double expectedY = destination.row() * world.tileMap().tileSize()
+                + (world.tileMap().tileSize() - world.autonomousAgent().size()) / 2.0;
 
+        assertEquals(NavigationStatus.DESTINATION_REACHED, world.navigationStatus());
         assertTrue(world.autonomousAgent().hasReachedDestination());
-        assertEquals(526.0, destinationX, EPSILON);
-        assertEquals(46.0, destinationY, EPSILON);
+        assertEquals(expectedX, destinationX, EPSILON);
+        assertEquals(expectedY, destinationY, EPSILON);
         assertEquals(destinationX, world.autonomousAgent().x(), EPSILON);
         assertEquals(destinationY, world.autonomousAgent().y(), EPSILON);
+    }
+
+    @Test
+    void resumesWhenPlayerChangesTileAfterBeingReached() {
+        RecordingPathfinder pathfinder = new RecordingPathfinder();
+        GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
+
+        for (int frame = 0;
+                frame < 1_000 && world.navigationStatus() == NavigationStatus.MOVING;
+                frame++) {
+            world.update(1.0 / 60.0, MovementInput.NONE);
+        }
+        assertEquals(NavigationStatus.DESTINATION_REACHED, world.navigationStatus());
+        assertEquals(1, pathfinder.calls());
+
+        world.update(0.05, new MovementInput(1.0, 0.0));
+        world.update(0.05, new MovementInput(1.0, 0.0));
+
+        assertEquals(2, pathfinder.calls());
+        assertEquals(new GridPosition(1, 5), world.navigationDestination());
+        assertEquals(NavigationStatus.MOVING, world.navigationStatus());
+        assertFalse(world.autonomousAgent().hasReachedDestination());
+    }
+
+    @Test
+    void doesNotRecalculateWhilePlayerRemainsInSameTile() {
+        RecordingPathfinder pathfinder = new RecordingPathfinder();
+        GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
+
+        for (int frame = 0; frame < 120; frame++) {
+            world.update(1.0 / 60.0, MovementInput.NONE);
+        }
+        world.update(0.01, new MovementInput(1.0, 0.0));
+
+        assertEquals(1, pathfinder.calls());
+        assertEquals(new GridPosition(1, 4), world.navigationDestination());
+    }
+
+    @Test
+    void recalculatesOnceWhenPlayerEntersAnotherTile() {
+        RecordingPathfinder pathfinder = new RecordingPathfinder();
+        GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
+
+        for (int frame = 0; frame < 3; frame++) {
+            world.update(0.05, new MovementInput(1.0, 0.0));
+        }
+        assertEquals(1, pathfinder.calls());
+
+        world.update(0.05, new MovementInput(1.0, 0.0));
+
+        GridPosition newDestination = new GridPosition(1, 5);
+        assertEquals(2, pathfinder.calls());
+        assertEquals(newDestination, pathfinder.lastDestination());
+        assertEquals(pathfinder.lastStart(), world.navigationPath().get(0));
+        assertEquals(
+                newDestination,
+                world.navigationPath().get(world.navigationPath().size() - 1)
+        );
+
+        for (int frame = 0; frame < 120; frame++) {
+            world.update(1.0 / 60.0, MovementInput.NONE);
+        }
+        assertEquals(2, pathfinder.calls());
+    }
+
+    @Test
+    void recalculatesFromCurrentAgentTile() {
+        RecordingPathfinder pathfinder = new RecordingPathfinder();
+        GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
+
+        world.update(0.80, MovementInput.NONE);
+        world.update(0.05, new MovementInput(1.0, 0.0));
+        GridPosition currentAgentTile = world.autonomousAgent().currentGridPosition();
+        assertFalse(currentAgentTile.equals(new GridPosition(13, 1)));
+
+        world.update(0.05, new MovementInput(1.0, 0.0));
+
+        assertEquals(2, pathfinder.calls());
+        assertEquals(currentAgentTile, pathfinder.lastStart());
+        assertEquals(currentAgentTile, world.navigationPath().get(0));
+    }
+
+    @Test
+    void stopsOnMissingRouteAndResumesAfterAnotherDestination() {
+        RecordingPathfinder pathfinder = new RecordingPathfinder();
+        GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
+        pathfinder.failNextSearch();
+
+        for (int frame = 0; frame < 4; frame++) {
+            world.update(0.05, new MovementInput(1.0, 0.0));
+        }
+
+        assertEquals(2, pathfinder.calls());
+        assertEquals(NavigationStatus.NO_PATH, world.navigationStatus());
+        assertTrue(world.navigationPath().isEmpty());
+        assertFalse(world.autonomousAgent().hasReachedDestination());
+        double stoppedX = world.autonomousAgent().x();
+        double stoppedY = world.autonomousAgent().y();
+
+        world.update(0.20, MovementInput.NONE);
+
+        assertEquals(2, pathfinder.calls());
+        assertEquals(stoppedX, world.autonomousAgent().x(), EPSILON);
+        assertEquals(stoppedY, world.autonomousAgent().y(), EPSILON);
+
+        for (int frame = 0; frame < 4; frame++) {
+            world.update(0.05, new MovementInput(-1.0, 0.0));
+        }
+
+        assertEquals(3, pathfinder.calls());
+        assertFalse(world.navigationPath().isEmpty());
+        assertEquals(NavigationStatus.MOVING, world.navigationStatus());
+        assertEquals(new GridPosition(1, 4), pathfinder.lastDestination());
+    }
+
+    private static final class RecordingPathfinder implements Pathfinder {
+
+        private final AStarPathfinder delegate = new AStarPathfinder();
+        private int calls;
+        private boolean failNextSearch;
+        private GridPosition lastStart;
+        private GridPosition lastDestination;
+
+        @Override
+        public List<GridPosition> findPath(
+                TileMap tileMap,
+                GridPosition start,
+                GridPosition destination
+        ) {
+            calls++;
+            lastStart = start;
+            lastDestination = destination;
+            if (failNextSearch) {
+                failNextSearch = false;
+                return List.of();
+            }
+            return delegate.findPath(tileMap, start, destination);
+        }
+
+        int calls() {
+            return calls;
+        }
+
+        GridPosition lastStart() {
+            return lastStart;
+        }
+
+        GridPosition lastDestination() {
+            return lastDestination;
+        }
+
+        void failNextSearch() {
+            failNextSearch = true;
+        }
     }
 }

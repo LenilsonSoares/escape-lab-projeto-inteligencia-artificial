@@ -5,15 +5,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
+import java.util.Set;
 
 /**
  * Calcula o menor caminho em quatro direções usando A* e heurística Manhattan.
  */
-public final class AStarPathfinder {
+public final class AStarPathfinder implements Pathfinder {
 
     private static final int[][] DIRECTIONS = {
         {-1, 0},
@@ -28,6 +30,7 @@ public final class AStarPathfinder {
             .thenComparingInt(node -> node.position().row())
             .thenComparingInt(node -> node.position().column());
 
+    @Override
     public List<GridPosition> findPath(
             TileMap tileMap,
             GridPosition start,
@@ -40,6 +43,7 @@ public final class AStarPathfinder {
         requireNavigable(tileMap, destination, "O destino");
 
         PriorityQueue<SearchNode> openNodes = new PriorityQueue<>(NODE_ORDER);
+        Set<GridPosition> closedNodes = new HashSet<>();
         Map<GridPosition, Integer> pathCosts = new HashMap<>();
         Map<GridPosition, GridPosition> previousPositions = new HashMap<>();
 
@@ -50,7 +54,8 @@ public final class AStarPathfinder {
         while (!openNodes.isEmpty()) {
             SearchNode current = openNodes.remove();
             int bestKnownCost = pathCosts.getOrDefault(current.position(), Integer.MAX_VALUE);
-            if (current.pathCost() != bestKnownCost) {
+            if (current.pathCost() != bestKnownCost
+                    || !closedNodes.add(current.position())) {
                 continue;
             }
 
@@ -59,7 +64,8 @@ public final class AStarPathfinder {
             }
 
             for (GridPosition neighbor : neighborsOf(current.position())) {
-                if (!tileMap.isWalkable(neighbor.row(), neighbor.column())) {
+                if (closedNodes.contains(neighbor)
+                        || !tileMap.isWalkable(neighbor.row(), neighbor.column())) {
                     continue;
                 }
 

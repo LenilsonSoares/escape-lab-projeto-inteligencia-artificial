@@ -13,10 +13,10 @@ public final class AutonomousAgent {
     private static final double POSITION_EPSILON = 1.0e-9;
 
     private final TileMap tileMap;
-    private final List<GridPosition> path;
     private final double size;
     private final double speed;
 
+    private List<GridPosition> path;
     private double x;
     private double y;
     private int nextWaypointIndex;
@@ -35,14 +35,9 @@ public final class AutonomousAgent {
             throw new IllegalArgumentException("A velocidade do agente deve ser maior que zero");
         }
 
-        this.path = List.copyOf(Objects.requireNonNull(path, "A rota não pode ser nula"));
-        if (this.path.isEmpty()) {
-            throw new IllegalArgumentException("A rota do agente não pode ser vazia");
-        }
-
         this.size = size;
         this.speed = speed;
-        validatePath();
+        this.path = validateAndCopy(path);
 
         GridPosition start = this.path.get(0);
         this.x = centeredX(start);
@@ -60,7 +55,9 @@ public final class AutonomousAgent {
             throw new IllegalArgumentException("O deslocamento do agente deve ser finito");
         }
 
-        while (remainingDistance > 0.0 && !hasReachedDestination()) {
+        while (remainingDistance > 0.0
+                && !path.isEmpty()
+                && !hasReachedDestination()) {
             GridPosition waypoint = path.get(nextWaypointIndex);
             double targetX = centeredX(waypoint);
             double targetY = centeredY(waypoint);
@@ -94,12 +91,36 @@ public final class AutonomousAgent {
         return path;
     }
 
-    public GridPosition destination() {
-        return path.get(path.size() - 1);
+    public void replacePath(List<GridPosition> newPath) {
+        List<GridPosition> validatedPath = validateAndCopy(newPath);
+        if (!validatedPath.get(0).equals(currentGridPosition())) {
+            throw new IllegalArgumentException(
+                    "A nova rota deve começar no tile atual do agente"
+            );
+        }
+
+        path = validatedPath;
+        GridPosition start = path.get(0);
+        double distanceToStart = Math.hypot(
+                centeredX(start) - x,
+                centeredY(start) - y
+        );
+        nextWaypointIndex = distanceToStart <= POSITION_EPSILON ? 1 : 0;
+    }
+
+    public void stop() {
+        path = List.of();
+        nextWaypointIndex = 0;
     }
 
     public boolean hasReachedDestination() {
-        return nextWaypointIndex >= path.size();
+        return !path.isEmpty() && nextWaypointIndex >= path.size();
+    }
+
+    public GridPosition currentGridPosition() {
+        int row = (int) Math.floor(centerY() / tileMap.tileSize());
+        int column = (int) Math.floor(centerX() / tileMap.tileSize());
+        return new GridPosition(row, column);
     }
 
     public double x() {
@@ -122,9 +143,16 @@ public final class AutonomousAgent {
         return y + size / 2.0;
     }
 
-    private void validatePath() {
+    private List<GridPosition> validateAndCopy(List<GridPosition> candidatePath) {
+        List<GridPosition> validatedPath = List.copyOf(
+                Objects.requireNonNull(candidatePath, "A rota não pode ser nula")
+        );
+        if (validatedPath.isEmpty()) {
+            throw new IllegalArgumentException("A rota do agente não pode ser vazia");
+        }
+
         GridPosition previous = null;
-        for (GridPosition position : path) {
+        for (GridPosition position : validatedPath) {
             if (!tileMap.isWalkable(position.row(), position.column())) {
                 throw new IllegalArgumentException("A rota contém um tile não transitável");
             }
@@ -141,6 +169,7 @@ public final class AutonomousAgent {
             }
             previous = position;
         }
+        return validatedPath;
     }
 
     private void moveTo(double nextX, double nextY) {

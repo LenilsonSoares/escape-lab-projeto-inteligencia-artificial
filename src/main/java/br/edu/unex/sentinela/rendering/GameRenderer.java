@@ -3,6 +3,7 @@ package br.edu.unex.sentinela.rendering;
 import br.edu.unex.sentinela.entity.AutonomousAgent;
 import br.edu.unex.sentinela.entity.Player;
 import br.edu.unex.sentinela.game.GameWorld;
+import br.edu.unex.sentinela.game.NavigationStatus;
 import br.edu.unex.sentinela.game.TileMap;
 import br.edu.unex.sentinela.game.TileType;
 import br.edu.unex.sentinela.navigation.GridPosition;
@@ -31,6 +32,7 @@ public final class GameRenderer {
     private static final Color PATH_COLOR = Color.web("#4cc9f0", 0.22);
     private static final Color PATH_LINE = Color.web("#4cc9f0", 0.82);
     private static final Color DESTINATION_COLOR = Color.web("#ffd166");
+    private static final Color UNREACHABLE_DESTINATION_COLOR = Color.web("#ef476f");
     private static final Color AGENT_COLOR = Color.web("#ffb703");
     private static final Color AGENT_DARK = Color.web("#7a4d00");
     private static final Color BORDER = Color.web("#2d5577");
@@ -63,6 +65,13 @@ public final class GameRenderer {
         double mapY = Math.max(0.0, (viewportHeight() - world.tileMap().pixelHeight()) / 2.0);
         drawTileMap(world.tileMap(), mapX, mapY);
         drawNavigationPath(world.navigationPath(), world.tileMap().tileSize(), mapX, mapY);
+        drawDestination(
+                world.navigationDestination(),
+                world.navigationStatus(),
+                world.tileMap().tileSize(),
+                mapX,
+                mapY
+        );
         drawPlayer(world.player(), mapX, mapY);
         drawAutonomousAgent(world.autonomousAgent(), mapX, mapY);
         drawDebugPanel(world, metrics);
@@ -145,6 +154,10 @@ public final class GameRenderer {
             double mapX,
             double mapY
     ) {
+        if (path.isEmpty()) {
+            return;
+        }
+
         graphics.setFill(PATH_COLOR);
         for (GridPosition position : path) {
             double x = mapX + position.column() * tileSize;
@@ -166,11 +179,21 @@ public final class GameRenderer {
             }
         }
         graphics.stroke();
+    }
 
-        GridPosition destination = path.get(path.size() - 1);
+    private void drawDestination(
+            GridPosition destination,
+            NavigationStatus navigationStatus,
+            double tileSize,
+            double mapX,
+            double mapY
+    ) {
         double destinationX = mapX + destination.column() * tileSize;
         double destinationY = mapY + destination.row() * tileSize;
-        graphics.setStroke(DESTINATION_COLOR);
+        Color markerColor = navigationStatus == NavigationStatus.NO_PATH
+                ? UNREACHABLE_DESTINATION_COLOR
+                : DESTINATION_COLOR;
+        graphics.setStroke(markerColor);
         graphics.setLineWidth(3.0);
         graphics.strokeOval(
                 destinationX + 2.0,
@@ -206,7 +229,6 @@ public final class GameRenderer {
 
     private void drawDebugPanel(GameWorld world, FrameMetrics metrics) {
         Player player = world.player();
-        AutonomousAgent agent = world.autonomousAgent();
         graphics.setFill(PANEL);
         graphics.fillRoundRect(PANEL_X, PANEL_Y, PANEL_WIDTH, PANEL_HEIGHT, 14.0, 14.0);
         graphics.setStroke(BORDER);
@@ -236,14 +258,20 @@ public final class GameRenderer {
                 PANEL_Y + 107.0
         );
         graphics.fillText(
-                "A*   %2d PASSOS".formatted(world.navigationPath().size() - 1),
+                "A*   %2d PASSOS".formatted(
+                        Math.max(0, world.navigationPath().size() - 1)
+                ),
                 PANEL_X + 16.0,
                 PANEL_Y + 132.0
         );
 
         graphics.setFill(MUTED_TEXT);
         graphics.setFont(Font.font("System", 11.0));
-        String agentStatus = agent.hasReachedDestination() ? "DESTINO ALCANÇADO" : "EM ROTA";
+        String agentStatus = switch (world.navigationStatus()) {
+            case MOVING -> "EM ROTA";
+            case DESTINATION_REACHED -> "ALVO ALCANÇADO";
+            case NO_PATH -> "SEM ROTA";
+        };
         graphics.fillText("AGENTE A*  " + agentStatus, PANEL_X + 16.0, PANEL_Y + 153.0);
     }
 
@@ -252,7 +280,7 @@ public final class GameRenderer {
         graphics.setFill(MUTED_TEXT);
         graphics.setFont(Font.font("System", FontWeight.NORMAL, 13.0));
         graphics.fillText(
-                "JOGADOR  •  WASD/SETAS    ROBÔ  •  A*",
+                "JOGADOR  •  WASD/SETAS    ROBÔ  •  A* DINÂMICO",
                 viewportWidth() - 20.0,
                 viewportHeight() - 22.0
         );
