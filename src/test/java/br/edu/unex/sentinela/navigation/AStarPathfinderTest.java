@@ -78,11 +78,11 @@ class AStarPathfinderTest {
     void findsShortestValidPathInLaboratory() {
         TileMap tileMap = TileMap.createLaboratory();
         GridPosition start = new GridPosition(13, 1);
-        GridPosition destination = new GridPosition(1, 13);
+        GridPosition destination = new GridPosition(1, 18);
 
         List<GridPosition> path = pathfinder.findPath(tileMap, start, destination);
 
-        assertEquals(25, path.size());
+        assertEquals(30, path.size());
         assertEquals(start, path.get(0));
         assertEquals(destination, path.get(path.size() - 1));
         assertValidPath(tileMap, path);

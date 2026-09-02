@@ -12,7 +12,7 @@ No Windows (PowerShell):
 .\mvnw.cmd clean javafx:run
 ```
 
-O Maven Wrapper baixa automaticamente o Maven e as dependências do JavaFX. O jogador verde é controlado por WASD ou pelas setas direcionais. O robô amarelo usa o A* para seguir o tile atual do jogador e atualiza sua rota quando o destino muda.
+O Maven Wrapper baixa automaticamente o Maven e as dependências do JavaFX. O jogador azul-esverdeado é controlado por WASD ou pelas setas direcionais. O robô amarelo usa o A* para seguir o tile atual do jogador e atualiza sua rota quando o destino muda.
 
 ## Testes
 
@@ -20,7 +20,7 @@ O Maven Wrapper baixa automaticamente o Maven e as dependências do JavaFX. O jo
 .\mvnw.cmd clean verify
 ```
 
-A suíte atual possui 43 testes automatizados para o Game Loop, movimento do jogador, tilemap, colisões, algoritmo A*, troca de rota e deslocamento do agente.
+A suíte atual possui 48 testes automatizados para o Game Loop, movimento do jogador, tilemap, colisões, algoritmo A*, troca de rota, deslocamento do agente, layout da interface e integridade dos assets visuais.
 
 ## Situação atual
 
@@ -30,7 +30,7 @@ O projeto possui:
 - Game Loop com delta time;
 - separação entre entrada, atualização e renderização;
 - jogador controlável por WASD ou setas;
-- mapa lógico de laboratório com 15 linhas e 15 colunas;
+- mapa lógico de laboratório com 15 linhas e 20 colunas, acima do mínimo de 15 × 15;
 - tiles de 40 pixels para piso, parede e equipamento;
 - corredores e obstáculos definidos na matriz;
 - colisão com paredes, equipamentos e limites do mapa;
@@ -40,9 +40,11 @@ O projeto possui:
 - recálculo da rota quando o jogador muda de tile;
 - intervalo mínimo entre buscas para evitar o uso do A* em todos os frames;
 - caminho atual destacado durante a execução;
+- minimapa construído a partir da mesma matriz usada pelo A*;
+- texturas e sprites originais organizados em `src/main/resources`;
 - testes automatizados com JUnit 5.
 
-O piso azul-escuro é transitável. As paredes cinzas e os equipamentos vermelhos são bloqueados.
+O piso metálico azul-escuro é transitável. As paredes modulares, os terminais e as cápsulas científicas são bloqueados. As imagens alteram somente a aparência; a propriedade lógica de cada tile continua definida pelo `TileType`.
 
 ## Navegação com A* dinâmico
 
@@ -85,21 +87,22 @@ Ao chegar ao destino, o agente para. Se o jogador mudar novamente de tile, uma n
 ### Representação visual
 
 - a linha azul-clara mostra o caminho atual;
-- o círculo amarelo identifica o destino atual e fica vermelho quando não existe uma rota até ele;
+- o marcador amarelo identifica o destino atual e fica vermelho quando não existe uma rota até ele;
 - o robô amarelo percorre a rota;
-- o jogador verde controla a mudança do destino;
-- o painel informa a quantidade de passos e o estado `EM ROTA`, `ALVO ALCANÇADO` ou `SEM ROTA`.
+- o jogador azul-esverdeado controla a mudança do destino;
+- o minimapa representa os mesmos pisos, bloqueios, posições e caminho do mapa principal;
+- o painel informa a quantidade de passos e o estado `EM ROTA`, `DESTINO ALCANÇADO` ou `SEM ROTA`.
 
 Quando uma nova busca é realizada, o caminho exibido também é atualizado.
 
 ## Testar manualmente
 
 1. Execute o jogo com `.\mvnw.cmd clean javafx:run`.
-2. Observe a rota inicial entre o robô amarelo e o jogador verde.
+2. Observe a rota inicial entre o robô amarelo e o jogador azul-esverdeado.
 3. Mova o jogador para outro tile usando WASD ou as setas.
 4. Aguarde até 200 milissegundos e confirme que a linha azul passa a terminar no novo destino.
 5. Caminhe por corredores diferentes e verifique que o robô não atravessa paredes ou equipamentos.
-6. Pare o jogador e aguarde o painel exibir `ALVO ALCANÇADO`.
+6. Pare o jogador e aguarde o painel exibir `DESTINO ALCANÇADO`.
 7. Confirme que o robô fica parado e volta a andar quando o jogador muda novamente de tile.
 
 ## Limites desta etapa

@@ -1,0 +1,305 @@
+Aprofundando o Algoritmo A*
+Cálculo de caminhos e navegação dinâmica em jogos
+Disciplina: Projeto de Inteligência Artificial · Curso: Sistemas de Informação – 
+8º semestre
+Professor: Marcus Vinicius Monteiro de Almeida Tavares
+SEGUNDA AULA SOBRE GRAFOS, BUSCA E NAVEGAÇÃO
+Retomando o Problema
+"Um inimigo precisa sair de sua posição atual e alcançar o jogador sem 
+atravessar paredes."
+O que já sabemos
+O tilemap representa o 
+ambiente do jogo
+Cada tile navegável é um nó do 
+grafo
+As conexões representam 
+movimentos válidos
+O agente ocupa o nó inicial; o 
+alvo ocupa o nó objetivo
+Por que A*?
+BFS e Dijkstra exploram nós sem 
+direção preferida. O A* usa uma 
+estimativa da distância restante 
+para direcionar a busca, tornando-a 
+muito mais eficiente em mapas 
+grandes.
+Diferente de programação 
+dinâmica: o A* é um 
+algoritmo de busca 
+informada por heurística.
+A Ideia Central do A*
+FUNÇÃO DE AVALIAÇÃO
+f(n) = g(n) + h(n)
+g(n) — Custo Percorrido
+Custo real acumulado desde o nó 
+inicial até o nó atual. É o caminho já 
+trilhado.
+Analogia: quilômetros já rodados na 
+viagem.
+h(n) — Heurística
+Estimativa do custo entre o nó atual e o 
+objetivo. Nunca superestima para 
+garantir optimalidade.
+Analogia: estimativa do GPS do que 
+ainda falta percorrer.
+f(n) — Custo Total Estimado
+Soma dos dois anteriores. O A* sempre 
+seleciona o nó com menor f(n) para 
+explorar a seguir.
+Analogia: estimativa total da viagem — 
+passado + futuro.
+Informações Armazenadas em Cada Nó
+Para funcionar corretamente, o A* precisa que cada nó mantenha um conjunto de dados associados:
+Posição no mapa
+Linha e coluna do tile na grade (ex.: linha 3, coluna 5).
+Valores g, h e f
+Custo percorrido, estimativa restante e custo total 
+estimado.
+Nó pai
+Referência ao nó de onde se chegou a este. Usado para 
+reconstruir o caminho ao final.
+Estado e navegabilidade
+Se o tile é navegável, se está na lista aberta, fechada ou não 
+visitado ainda. Custo de terreno quando aplicável.
+Ficha de um Nó
+Campo Valor
+Posição (3, 5)
+g 30
+h 40
+f 70
+Pai (2, 5)
+Estado Aberto
+O nó pai será percorrido em sentido inverso para reconstruir o caminho final.
+Lista Aberta e Lista Fechada
+Duas estruturas controlam quais nós já foram analisados e quais ainda aguardam avaliação:
+🟡 Lista Aberta
+Fronteira da busca. Contém nós descobertos mas ainda não 
+expandidos.
+Permite selecionar o nó com menor f
+Implementada com fila de prioridade
+Começa com o nó inicial
+🔵 Lista Fechada
+Nós já analisados. Evita reprocessamento e ciclos.
+Um nó fechado não precisa ser expandido novamente
+Previne loops infinitos
+Garante que cada nó seja avaliado uma única vez
+🟢
+Início
+Primeiro nó inserido na lista aberta
+🔴
+Objetivo
+Quando atingido, o caminho está encontrado
+⬛
+Obstáculo
+Tiles bloqueados, ignorados pelo algoritmo
+🟠
+Caminho Final
+Reconstruído seguindo os nós pai em reverso
+O Ciclo de Execução do A*
+Mover para 
+fechado
+Atualizar g/h/fÉ objetivo?Selecionar 
+menor f
+Inserir início
+Condições de Parada
+Objetivo alcançado ✅
+O nó com menor f é o destino. Reconstruir o 
+caminho pelos nós pai.
+Lista aberta vazia ❌
+Todos os nós acessíveis foram explorados sem 
+encontrar o destino. Não existe caminho possível.
+Pergunte à turma: o que acontece se o objetivo 
+estiver cercado de obstáculos?
+Calculando g(n): o Custo Percorrido
+g(n) é o custo real e acumulado do caminho desde o nó inicial até o nó atual. Nunca é uma estimativa.
+Custos de Movimento Típicos
+Tipo de Movimento Custo
+Horizontal / Vertical 10
+Diagonal 14
+Terreno difícil +custo extra
+Exemplo de Cálculo
+Nó atual tem g = 30. Próximo movimento custa 10:
+novo_g = 30 + 10 = 40
+Quando Atualizar g?
+Se um nó já foi descoberto por outro caminho, compare:
+novo_g < g ​?registrado
+Se sim, o novo caminho é melhor:
+Atualizar g do nó
+Recalcular f = g + h
+Substituir o nó pai pelo atual
+Essa comparação permite ao A* corrigir rotas inicialmente subótimas ao longo da 
+busca.
+Calculando h(n): a Heurística
+A heurística h(n) é uma estimativa do custo restante até o objetivo. Para ser admissível, nunca deve superestimar o custo real.
+Distância de Manhattan
+Indicada para movimentação em 4 direções (cima, baixo, 
+esquerda, direita):
+h(n) = (∣Δx∣ + ∣Δy∣) × 10
+Exemplo Prático
+Campo Valor
+Nó atual (2, 3)
+Objetivo (6, 5)
+|Δx| = |2−6| 4
+|Δy| = |3−5| 2
+h = (4+2)×10 60
+Por que Manhattan funciona?
+Em um mapa ortogonal, o menor número possível de movimentos 
+para chegar ao objetivo é exatamente a soma das diferenças 
+horizontal e vertical. A heurística nunca superestima esse valor, 
+garantindo que o A* encontre o caminho ótimo.
+Demonstre visualmente na grade: mostre a diferença 
+de colunas e linhas separadamente antes de somar.
+Heurísticas para Diferentes Movimentações
+A escolha da heurística deve respeitar as regras de movimento do agente no jogo. Usar uma heurística inadequada pode tornar o A* 
+ineficiente ou incorreto.
+Movimentação Heurística Fórmula Vantagem Limitação
+4 direções Manhattan |Δx| + |Δy| × 10 Simples e precisa Ignora diagonais
+8 direções Diagonal (Octil) max(|Δx|,|Δy|)×10 + 
+min×4
+Considera diagonais Mais complexa
+Livre (física) Euclidiana √(Δx² + Δy²) Mais precisa em geral Custo computacional 
+maior
+Peça à turma que identifique qual heurística é mais adequada para o projeto da disciplina com base na movimentação 
+implementada no jogo.
+Exemplo Completo de Cálculo — Grade 5×5
+Grade 5×5 com início em (1,1), objetivo em (1,5), obstáculo em (1,3). Movimentação em 4 direções, custo 10 por passo, heurística de 
+Manhattan.
+Nó g h f Pai Estado
+(1,1) 0 40 40 — 🔵 Fechado
+(2,1) 10 50 60 (1,1) 🟡 Aberto
+(1,2) 10 30 40 (1,1) 🔵 Fechado
+(2,2) 20 40 60 (1,2) 🟡 Aberto
+(1,3) — — — — ⬛ Obstáculo
+(2,3) 30 20 50 (2,2) 🔵 Fechado
+(2,4) 40 10 50 (2,3) 🔵 Fechado
+(1,5) 🎯 60 0 60 (2,5) ✅ Objetivo
+O obstáculo em (1,3) forçou o desvio por (2,2)→(2,3)→(2,4)→(2,5)→(1,5). Todos os valores de f são matematicamente consistentes com Manhattan × 10.
+Reconstruindo o Caminho
+Quando o objetivo é alcançado, o A* não retorna automaticamente a sequência ordenada. O caminho é reconstruído ao seguir os ponteiros 
+de nó pai em sentido inverso.
+Inverter 
+sequência
+Repetir até 
+início
+Consultar nó 
+pai
+Partir do 
+objetivo
+Exemplo de Reconstrução
+Seguindo os pais (de trás para frente):
+(1,5) → (2,5) → (2,4) → (2,3) → (2,2) → (1,2) → (1,1)
+Após inverter:
+(1,1) → (1,2) → (2,2) → (2,3) → (2,4) → (2,5) → (1,5)
+O resultado final é uma lista de waypoints — posições ordenadas 
+que o agente deverá percorrer em sequência para alcançar o 
+destino.
+Do Caminho Calculado ao Movimento do Agente
+O A* produz uma lista de tiles. Calcular o caminho e movimentar o agente são responsabilidades distintas — o algoritmo não move nada 
+sozinho.
+1 A* entrega a lista de waypoints
+Sequência de tiles do início ao destino.
+2 Controlador lê o próximo ponto
+Calcula a direção e move o agente gradualmente a cada 
+frame.
+3 Waypoint alcançado → avançar
+Remove o ponto atual da lista e passa para o próximo.
+4 Lista vazia → agente parado
+O destino foi atingido ou não há mais pontos.
+Pseudocódigo do Controlador
+caminho = calcularAEstrela(inicio, destino)
+enquanto caminho não vazio:
+ proximo = caminho[0]
+ moverAgente(proximo)
+ se agente chegou em proximo:
+   remover proximo de caminho
+// Sem teleporte entre tiles!
+// O agente percorre o espaço suavemente.
+O agente não deve "teletransportar-se" entre tiles — o 
+movimento deve ser animado frame a frame para manter a 
+fluidez visual do jogo.
+Cálculo Dinâmico Durante o 
+Jogo
+"O A* encontrou um caminho — mas o jogador mudou de posição ou uma 
+passagem foi bloqueada." O caminho calculado pode deixar de ser válido a 
+qualquer momento.
+1
+1. Caminho Original
+A* calculou a rota com base no estado inicial do mapa e na 
+posição do jogador.
+2
+2. Mudança no Ambiente
+Porta fechada, obstáculo criado, jogador mudou de tile, waypoint 
+tornou-se inacessível.
+3
+3. Recálculo Dinâmico
+Nova busca A* com: posição atual do agente como início + 
+posição atualizada do alvo + mapa atual.
+Recálculo dinâmico ≠ programação dinâmica. É simplesmente a 
+execução de uma nova busca A* com dados atualizados durante o 
+jogo em execução.
+Quando Recalcular a Rota?
+Recalcular a cada frame é desnecessário e prejudicial ao desempenho. A escolha da estratégia impacta diretamente a qualidade do jogo.
+Estratégia Quando Recalcula Vantagem Risco
+Cada frame Sempre Reação imediata Custo elevado, inviável
+Por intervalo A cada N ms Processamento distribuído Pequena demora na reação
+Por evento Mudança detectada Eficiente e responsivo Requer detecção de eventos
+Híbrida ✅ Evento + intervalo mínimo Melhor custo-benefício Implementação mais 
+cuidadosa
+Recomendação para Projetos Acadêmicos
+01
+Não recalcular a cada frame
+02
+Recalcular quando o alvo mudar de tile
+03
+Aplicar intervalo mínimo entre buscas
+04
+Reutilizar o caminho enquanto válido
+Desempenho com Vários Agentes
+⚠️ Problemas Comuns
+Picos de processamento e queda de FPS
+Múltiplos agentes buscando no mesmo frame
+Recálculos desnecessários por mudanças mínimas
+Agentes bloqueando uns aos outros sem reação
+✅ Estratégias de Otimização
+Distribuir os cálculos entre diferentes frames
+Limitar o número de buscas por atualização
+Compartilhar caminhos entre agentes com origem/destino próximos
+Cancelar buscas que deixaram de ser relevantes
+Separar obstáculos permanentes de temporários no grafo
+Evitar tratar cada mudança visual como alteração do grafo
+Primeiro objetivo: implementar o A* corretamente. Otimizações só devem ser aplicadas após validar o funcionamento básico. 
+Otimização prematura é a raiz de muitos problemas em projetos acadêmicos.
+Atividade Prática e Fechamento
+DESAFIO DA AULA
+"Implemente ou simule o A* em um tilemap e faça o agente recalcular sua rota quando o destino mudar."
+Etapas da Implementação
+01
+Definir posição inicial e 
+destino
+02
+Identificar tiles 
+transitáveis e bloqueados
+03
+Implementar listas aberta 
+e fechada
+04
+Calcular g, h e f; registrar 
+nó pai
+05
+Reconstruir e percorrer 
+waypoints
+06
+Alterar destino e 
+recalcular dinamicamente
+Perguntas para Discussão
+O que acontece se a lista aberta ficar vazia?
+Como saber se um caminho precisa ser recalculado?
+Por que não executar o A* em todos os frames?
+Qual heurística é adequada para o movimento do seu jogo?
+Como evitar picos com vários agentes simultâneos?
+O que fazer se o destino se tornar inalcançável?
+Desafio Extra 🔥
+Adicione um obstáculo durante a execução e faça o agente detectar que o 
+caminho foi invalidado antes de solicitar uma nova rota.
+"O A* calcula uma rota usando custo acumulado e estimativa. Em um jogo, essa rota precisa ser executada, validada e, quando 
+necessário, recalculada."

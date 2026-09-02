@@ -1,0 +1,422 @@
+Projeto de Inteligência 
+Artificial
+Construindo agentes que percebem, decidem e agem
+8º Semestre — Sistemas de Informação
+Prof. Marcus Vinicius Monteiro de Almeida Tavares
+Semestre 2026.2
+O que faz um personagem parecer inteligente?
+Antes de falar sobre algoritmos, vale refletir sobre o que já observamos em jogos. Cada pergunta abaixo esconde uma técnica de IA que 
+estudaremos este semestre.
+🎯 Seguir o jogador 
+é suficiente?
+🔍 Como um 
+inimigo sabe onde 
+procurar?
+⚔️ Atacar, fugir ou 
+pedir ajuda?
+🤝 Como agentes 
+cooperam entre si?
+🎲 Como evitar comportamentos previsíveis? 📊 Como medir se a IA melhorou?
+Proposta da Disciplina
+A disciplina é organizada em torno de um projeto prático desenvolvido ao longo de todo o semestre. Não há separação entre teoria e 
+prática — os algoritmos são implementados, testados e avaliados diretamente no jogo.
+O que os estudantes farão
+Projetar e representar um ambiente 2D
+Implementar movimentação e colisões
+Criar agentes inteligentes autônomos
+Implementar algoritmos de busca
+Desenvolver sistemas de percepção
+Criar memória e estados internos
+Implementar tomada de decisão
+Desenvolver cooperação entre agentes
+Testar e avaliar comportamentos
+"A inteligência deverá ser percebida no comportamento dos 
+agentes e explicada por meio dos algoritmos implementados."
+Ao final do semestre, cada equipe terá construído um ambiente 
+experimental completo, com agentes que demonstram 
+comportamentos emergentes e mensuráveis.
+IA Não É Apenas Machine Learning
+Existe uma percepção comum de que Inteligência Artificial se resume a redes neurais e modelos de linguagem. Este semestre trabalharemos 
+com a base que sustenta grande parte dos jogos digitais: a IA clássica.
+🧠 IA Clássica
+Busca e planejamento
+Sistemas baseados em regras
+Máquinas de estados
+Árvores de comportamento
+Tomada de decisão
+📈 Machine Learning
+Aprendizado por dados
+Classificação e regressão
+Agrupamento
+Aprendizado por reforço
+Extensão opcional no projeto
+🎮 IA em Jogos
+Navegação e percepção
+Memória e decisão
+Cooperação entre agentes
+Controle de dificuldade
+O projeto trabalhará principalmente com técnicas clássicas de IA. Machine Learning poderá ser utilizado como extensão opcional, 
+mas não é requisito obrigatório.
+O Jogo como Laboratório 
+de IA
+Por que desenvolver um jogo? Porque ele oferece um ambiente experimental 
+ideal: controlado, visual e mensurável.
+Visualização imediata
+Algoritmos se tornam visíveis no comportamento dos agentes em tempo 
+real.
+Ambiente controlado
+Experimentos podem ser reproduzidos e comparados com precisão.
+Métricas coletáveis
+Desempenho dos agentes pode ser medido, registrado e analisado.
+Integração de sistemas
+Exige que percepção, memória, decisão e movimentação funcionem juntos.
+"O jogo não é apenas o produto final. Ele é o ambiente experimental da 
+disciplina."
+Escopo Técnico do Projeto
+O jogo a ser desenvolvido é um 2D top-down com agentes autônomos. Cada equipe define sua temática, mas todos os requisitos técnicos 
+abaixo são obrigatórios.
+🗺️ Ambiente
+Mapa em tiles
+Obstáculos e áreas navegáveis
+Jogador controlável
+🤖 Agentes
+Patrulha e navegação com A*
+Percepção visual e auditiva
+Memória e estados comportamentais
+Diferentes arquétipos
+🧩 Inteligência
+Busca pelo jogador
+Cooperação entre agentes
+Dificuldade dinâmica
+Ferramentas de debug
+Cada equipe poderá criar sua própria temática e identidade visual, desde que cumpra os requisitos técnicos estabelecidos.
+Tecnologias e Restrições
+Stack do Projeto
+01
+Java
+Linguagem principal — orientação a objetos, estruturas de dados e 
+grafos.
+02
+JavaFX
+Renderização do ambiente, entrada do jogador e painel de debug.
+03
+Git & GitHub
+Controle de versão e colaboração entre os integrantes da equipe.
+Por que sem game engine?
+Não utilizaremos Unity, Godot ou Unreal. O objetivo é que os 
+estudantes implementem e compreendam cada camada do 
+sistema:
+Game loop e atualização de estados
+Renderização e representação do mapa
+Colisões e navegação
+Percepção e tomada de decisão
+"O framework poderá desenhar o ambiente, mas a inteligência 
+deverá ser construída pela equipe."
+Equipes e Competências
+O projeto será desenvolvido em equipes de aproximadamente cinco integrantes. Os papéis são sugestões — todos devem compreender o 
+projeto como um todo.
+1
+Arquitetura
+Núcleo do jogo, game loop e integração geral dos sistemas.
+2
+Ambiente
+Mapa em tiles, movimentação do jogador e colisões.
+3
+Navegação
+Grafos, algoritmos de busca e implementação do A*.
+4
+Comportamento
+Percepção, memória, estados e tomada de decisão dos agentes.
+5
+Qualidade
+Testes, métricas, documentação e integração das entregas.
+💻 Programação 🏗️ Arquitetura 🤖 IA 🔬 Experimentação
+🤝 Trabalho em equipe 📋 Planejamento
+Arquitetura e Ciclo do Agente
+Módulos do Sistema
+🖥️ Apresentação
+JavaFX · Renderização · 
+Entrada do jogador · Debug
+⚙️ Núcleo do Jogo
+Game loop · Entidades · 
+Mapa · Colisões · Eventos
+🧠 Inteligência Artificial
+Navegação · Percepção · Memória · Decisão · Comunicação · 
+Diretor de IA
+Ciclo do Agente
+Perceber Interpretar
+MemorizarDecidir
+Cada agente executa este ciclo a cada iteração do game loop, 
+tornando seu comportamento emergente e mensurável.
+Jornada do Projeto
+O semestre é dividido em seis fases progressivas. Cada fase gera uma versão demonstrável do jogo, permitindo acompanhar a evolução dos 
+comportamentos dos agentes.
+11. Fundamentos
+Arquitetura, game loop, mapas e colisões.
+2 2. Navegação
+Grafos, busca, A* e heurísticas.
+33. Percepção
+Visão, audição e eventos do ambiente.
+4 4. Memória & Decisão
+Suspeita, busca, FSM e Utility AI.
+55. Inteligência Coletiva
+Arquétipos, cooperação, blackboard e dificuldade dinâmica.
+6 6. Integração
+Testes, playtests, documentação e apresentação final.
+Cada fase encerra com uma versão demonstrável — o progresso é contínuo e visível, não apenas entregue ao final do semestre.
+FASE 1 — FUNDAMENTOS
+Cronograma: Fundações
+Aula 1 — 28/07/2026
+Apresentação da disciplina, proposta do projeto final e 
+formação das equipes.
+Aula 2 — 04/08/2026
+Arquitetura do jogo e implementação do game loop em Java 
+com JavaFX.
+Aula 3 — 11/08/2026
+Mapas em tiles, colisões e representação do ambiente 
+navegável.
+Aula 4 — 18/08/2026
+Grafos e algoritmos de busca — base para a navegação 
+dos agentes.
+Resultados Esperados ao Final desta Fase
+Estrutura inicial 
+executável
+Game loop 
+funcional
+Jogador + Mapa + 
+Colisões
+Grafo navegável do 
+ambiente
+FASE 2 — NAVEGAÇÃO
+Cronograma: Navegação
+Aula 5 — 
+25/08/2026
+Algoritmo A* e funções 
+heurísticas — 
+implementação e 
+análise.
+Aula 6 — 
+01/09/2026
+Custos de navegação, 
+obstáculos dinâmicos 
+e avaliação 
+comparativa do A*.
+OAT 1 — Relatório sobre as heurísticas utilizadas no 
+algoritmo A*.
+Resultados Esperados
+Implementação própria do A*
+Comparação entre heurísticas
+Visualização das rotas calculadas
+Registro dos nós visitados
+Testes de custo e análise de desempenho
+"O algoritmo deverá funcionar, mas a equipe também deverá 
+explicar por que ele funciona."
+FASE 3 — PERCEPÇÃO
+Cronograma: Agentes e Percepção
+Aula 7 — 08/09/2026
+Agentes inteligentes e máquinas de estados finitos (FSM) — 
+modelagem e transições.
+Aula 8 — 15/09/2026
+Sistema de percepção visual — campo de visão, ângulo, 
+distância e oclusão por obstáculos.
+Aula 9 — 22/09/2026
+Percepção auditiva — sons, área de alcance e investigação 
+de eventos do ambiente.
+Aula 10 — 29/09/2026
+VA1 - Verificação de Aprendizado 1
+Resultados Esperados
+Patrulha e estados 
+comportamentais
+Campo de visão 
+com oclusão
+Detecção por 
+distância e ângulo
+Sons e investigação 
+de eventos
+FASE 4 — MEMÓRIA E DECISÃO
+Cronograma: Memória e Decisão
+Aula 11 — 
+06/10/2026
+Memória dos agentes, 
+níveis de suspeita e 
+estratégias de busca 
+pelo jogador.
+Aula 12 — 
+13/10/2026
+Árvores de 
+comportamento 
+(Behavior Trees) e 
+Utility AI — decisões 
+hierárquicas e por 
+pontuação.
+Aula 13 — 
+20/10/2026
+Arquétipos de agentes 
+— especialização e 
+comportamentos 
+diferenciados.
+Comparativo de Técnicas de Decisão
+🔄 Máquina de Estados
+Comportamentos simples e bem definidos com transições 
+claras.
+🌲 Árvore de Comportamento
+Organização hierárquica das decisões, reutilizável e modular.
+⚖️ Utility AI
+Escolha baseada em pontuações, prioridades e contexto.
+FASE 5 — COOPERAÇÃO
+Cronograma: Cooperação e Adaptação
+Aula 14 — 
+27/10/2026
+Cooperação entre 
+agentes e padrão 
+Blackboard — 
+compartilhamento de 
+informações e 
+coordenação.
+Aula 15 — 
+03/11/2026
+Diretor de IA e 
+dificuldade dinâmica 
+— controle da 
+intensidade e 
+adaptação ao 
+desempenho do 
+jogador.
+OAT 2 — Apresentação parcial do projeto ao final da Aula 
+14.
+Resultados Esperados
+Compartilhamento de posições e informações
+Coordenação de buscas e tarefas
+Blackboard implementado e funcional
+Controle da intensidade dos desafios
+Adaptação dinâmica da dificuldade
+"Cooperação não significa apenas vários agentes executando a 
+mesma ação."
+FASE 6 — INTEGRAÇÃO
+Cronograma: Integração e Entrega
+Aula 16 — 10/11/2026
+Testes de integração — verificação de todos os sistemas 
+funcionando em conjunto.
+Aula 17 — 17/11/2026
+Integração final, testes e playtest com a turma — coleta de 
+feedback.
+Aula 18 — 24/11/2026
+Prática e ajustes finais — correções críticas e polimento dos 
+comportamentos.
+Aula 19 — 01/12/2026
+VA2 — Apresentação final. Cada equipe apresenta o 
+projeto completo.
+Aula 20 — 08/12/2026
+Encerramento, entrega dos resultados finais e reflexões 
+sobre o semestre.
+Atividades e datas poderão ser ajustadas conforme o calendário acadêmico.
+Avaliações e Marcos
+Avaliações do Semestre
+OAT 1
+Relatório técnico sobre as 
+heurísticas utilizadas no 
+A* + Primeiro relatório de 
+andamento do projeto.
+VA1
+Verificação de 
+Aprendizado
+OAT 2
+Apresentação parcial com 
+demonstração das 
+funcionalidades 
+implementadas.
+VA2
+Apresentação final do 
+projeto completo.
+Dimensões de Acompanhamento
+Compreensão dos algoritmos
+Correção da implementação
+Qualidade da arquitetura
+Evolução contínua do projeto
+Integração entre sistemas
+Testes e métricas coletadas
+Participação e documentação
+Qualidade da apresentação final
+Marcos Técnicos
+01
+Fundação técnica
+02
+Navegação com A*
+03
+Percepção ativa
+04
+Memória e decisão
+05
+Cooperação
+06
+Versão integrada + apresentação final
+Entregas, Debug e Métricas
+Checklist de Entrega
+Código-fonte no repositório Git
+Instruções de execução
+Jogo funcional e executável
+Algoritmos implementados (A*, FSM, BT)
+Sistemas de percepção visual e auditiva
+Memória e tomada de decisão
+Cooperação entre agentes
+Testes e relatórios
+Apresentação final preparada
+Recursos de Debug
+Grade do mapa Caminho e nós 
+visitados
+Campo de visão Área de audição
+Estado atual do 
+agente
+Nível de suspeita
+Decisão 
+selecionada
+Blackboard
+"Se não conseguimos observar e medir o algoritmo, torna-se 
+difícil testá-lo e melhorá-lo."
+Primeira Atividade: Definindo a Visão do Jogo
+Ainda nesta aula, cada equipe deverá responder as perguntas abaixo e preparar uma proposta de uma página com a visão inicial do projeto.
+1
+Contexto e objetivo
+Qual o contexto do jogo e o 
+objetivo do jogador?
+2
+Agentes
+Quem são os agentes e 
+como percebem o 
+ambiente?
+3
+Comportamentos
+Quais comportamentos são 
+necessários? Como 
+cooperam?
+4
+Desafio e medição
+O que torna a experiência 
+desafiadora? Como medir a 
+IA?
+5
+Visualização
+Como a IA será visualizada e depurada no jogo?
+6
+Escopo mínimo viável
+O que é indispensável na versão mais simples do projeto?
+A proposta deve conter: nome provisório, conceito, objetivo, tipos de agentes, comportamentos, diferencial, referências e riscos 
+técnicos.
+Vamos construir agentes 
+inteligentes?
+Os próximos passos para começar o semestre com o pé direito:
+🧑‍🤝‍🧑 Equipe
+Formar as equipes
+Criar canal de comunicação
+Criar o repositório no GitHub
+Definir regras de colaboração
+🎮 Projeto
+Pesquisar jogos de referência
+Escolher o conceito do jogo
+Reduzir o escopo ao essencial
+💻 Técnico
+Preparar o ambiente Java + JavaFX
+Revisar orientação a objetos
+Revisar estruturas de dados
+"O objetivo não é apenas criar um jogo que funcione. É criar uma Inteligência 
+Artificial que possa ser observada, explicada, testada e aprimorada."

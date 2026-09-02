@@ -6,6 +6,7 @@ import br.edu.unex.sentinela.input.InputManager;
 import br.edu.unex.sentinela.rendering.GameRenderer;
 import br.edu.unex.sentinela.telemetry.FrameMetrics;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.layout.StackPane;
@@ -17,10 +18,10 @@ import javafx.stage.Stage;
  */
 public final class GameApplication extends Application {
 
-    private static final double INITIAL_WIDTH = 1_120.0;
+    private static final double INITIAL_WIDTH = 1_280.0;
     private static final double INITIAL_HEIGHT = 720.0;
-    private static final double MIN_WIDTH = 960.0;
-    private static final double MIN_HEIGHT = 720.0;
+    private static final double MIN_VIEWPORT_WIDTH = 1_120.0;
+    private static final double MIN_VIEWPORT_HEIGHT = 720.0;
 
     private GameEngine gameEngine;
 
@@ -47,12 +48,21 @@ public final class GameApplication extends Application {
         gameEngine = new GameEngine(inputManager, world, renderer, new FrameMetrics());
 
         stage.setTitle("Escape Lab — Projeto de Inteligência Artificial");
-        stage.setMinWidth(MIN_WIDTH);
-        stage.setMinHeight(MIN_HEIGHT);
+        stage.setMinWidth(MIN_VIEWPORT_WIDTH);
+        stage.setMinHeight(MIN_VIEWPORT_HEIGHT);
         stage.setScene(scene);
         stage.show();
+        Platform.runLater(() -> preserveMinimumViewport(stage, scene));
 
         gameEngine.start();
+    }
+
+    private void preserveMinimumViewport(Stage stage, Scene scene) {
+        double windowBorderWidth = Math.max(0.0, stage.getWidth() - scene.getWidth());
+        double titleBarHeight = Math.max(0.0, stage.getHeight() - scene.getHeight());
+
+        stage.setMinWidth(MIN_VIEWPORT_WIDTH + windowBorderWidth);
+        stage.setMinHeight(MIN_VIEWPORT_HEIGHT + titleBarHeight);
     }
 
     @Override
