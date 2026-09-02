@@ -122,6 +122,34 @@ class AutonomousAgentTest {
     }
 
     @Test
+    void continuesCurrentSegmentWhenFirstStepRemainsTheSame() {
+        TileMap tileMap = openMap(4, 4);
+        AutonomousAgent agent = new AutonomousAgent(
+                tileMap,
+                List.of(
+                        new GridPosition(2, 0),
+                        new GridPosition(2, 1),
+                        new GridPosition(2, 2)
+                ),
+                20.0,
+                40.0
+        );
+        agent.update(0.25);
+        double previousX = agent.x();
+        double previousY = agent.y();
+
+        agent.replacePath(List.of(
+                new GridPosition(2, 0),
+                new GridPosition(2, 1),
+                new GridPosition(1, 1)
+        ));
+        agent.update(0.25);
+
+        assertEquals(previousX + 10.0, agent.x(), EPSILON);
+        assertEquals(previousY, agent.y(), EPSILON);
+    }
+
+    @Test
     void stopsAndResumesWithAnotherPath() {
         TileMap tileMap = openMap(3, 3);
         AutonomousAgent agent = new AutonomousAgent(

@@ -99,13 +99,19 @@ public final class AutonomousAgent {
             );
         }
 
+        boolean continuesCurrentSegment = nextWaypointIndex < path.size()
+                && validatedPath.size() > 1
+                && path.get(nextWaypointIndex).equals(validatedPath.get(1));
         path = validatedPath;
         GridPosition start = path.get(0);
         double distanceToStart = Math.hypot(
                 centeredX(start) - x,
                 centeredY(start) - y
         );
-        nextWaypointIndex = distanceToStart <= POSITION_EPSILON ? 1 : 0;
+
+        // Mantém o avanço quando o primeiro passo da rota não mudou.
+        nextWaypointIndex = (continuesCurrentSegment
+                || distanceToStart <= POSITION_EPSILON) ? 1 : 0;
     }
 
     public void stop() {

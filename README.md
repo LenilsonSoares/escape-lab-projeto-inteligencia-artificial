@@ -20,7 +20,7 @@ O Maven Wrapper baixa automaticamente o Maven e as dependências do JavaFX. O jo
 .\mvnw.cmd clean verify
 ```
 
-A suíte atual possui 41 testes automatizados para o Game Loop, movimento do jogador, tilemap, colisões, algoritmo A*, troca de rota e deslocamento do agente.
+A suíte atual possui 43 testes automatizados para o Game Loop, movimento do jogador, tilemap, colisões, algoritmo A*, troca de rota e deslocamento do agente.
 
 ## Situação atual
 

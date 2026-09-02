@@ -177,6 +177,20 @@ class GameWorldTest {
     }
 
     @Test
+    void agentKeepsMovingWhilePlayerChangesDestination() {
+        RecordingPathfinder pathfinder = new RecordingPathfinder();
+        GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
+        double initialAgentY = world.autonomousAgent().y();
+
+        for (int frame = 0; frame < 60; frame++) {
+            world.update(1.0 / 60.0, new MovementInput(1.0, 0.0));
+        }
+
+        assertTrue(pathfinder.calls() >= 4);
+        assertTrue(world.autonomousAgent().y() < initialAgentY - 60.0);
+    }
+
+    @Test
     void recalculatesFromCurrentAgentTile() {
         RecordingPathfinder pathfinder = new RecordingPathfinder();
         GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
