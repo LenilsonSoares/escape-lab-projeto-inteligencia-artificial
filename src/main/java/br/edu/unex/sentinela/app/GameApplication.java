@@ -62,7 +62,7 @@ public final class GameApplication extends Application {
             }
         });
 
-        GameWorld world = new GameWorld(INITIAL_WIDTH, INITIAL_HEIGHT);
+        GameWorld world = new GameWorld();
         GameRenderer renderer = new GameRenderer(canvas);
         gameEngine = new GameEngine(inputManager, world, renderer, new FrameMetrics());
 

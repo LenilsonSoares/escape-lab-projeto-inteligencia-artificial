@@ -19,7 +19,7 @@ class GameWorldTest {
 
     @Test
     void startsPlayerAtConfiguredWalkableTile() {
-        GameWorld world = new GameWorld(200.0, 100.0);
+        GameWorld world = new GameWorld();
         TileMap tileMap = world.tileMap();
 
         assertEquals(
@@ -39,30 +39,20 @@ class GameWorldTest {
     }
 
     @Test
-    void viewportDimensionsDoNotDefinePlayerPositionInsideMap() {
-        GameWorld world = new GameWorld(400.0, 300.0);
+    void startsWithFirstLaboratoryMap() {
+        GameWorld world = new GameWorld();
 
-        assertEquals(
-                world.tileMap().playerStartX(world.player().size()),
-                world.player().x(),
-                EPSILON
-        );
-        assertEquals(
-                world.tileMap().playerStartY(world.player().size()),
-                world.player().y(),
-                EPSILON
-        );
+        assertEquals(LaboratoryMap.ESCAPE_ROUTE, world.currentMap());
     }
 
     @Test
-    void rejectsInvalidDimensions() {
-        assertThrows(IllegalArgumentException.class, () -> new GameWorld(0.0, 100.0));
-        assertThrows(IllegalArgumentException.class, () -> new GameWorld(100.0, Double.NaN));
+    void rejectsNullPathfinder() {
+        assertThrows(NullPointerException.class, () -> new GameWorld(null));
     }
 
     @Test
     void createsValidRouteToInitialPlayerTile() {
-        GameWorld world = new GameWorld(960.0, 640.0);
+        GameWorld world = new GameWorld();
         List<GridPosition> path = world.navigationPath();
         GridPosition initialPlayerTile = new GridPosition(
                 world.tileMap().playerStartRow(),
@@ -85,7 +75,7 @@ class GameWorldTest {
 
     @Test
     void autonomousAgentStopsAtPlayerTile() {
-        GameWorld world = new GameWorld(960.0, 640.0);
+        GameWorld world = new GameWorld();
 
         for (int frame = 0;
                 frame < 1_000 && world.navigationStatus() == NavigationStatus.MOVING;
@@ -119,7 +109,7 @@ class GameWorldTest {
     @Test
     void resumesWhenPlayerChangesTileAfterBeingReached() {
         RecordingPathfinder pathfinder = new RecordingPathfinder();
-        GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
+        GameWorld world = new GameWorld(pathfinder);
 
         for (int frame = 0;
                 frame < 1_000 && world.navigationStatus() == NavigationStatus.MOVING;
@@ -141,7 +131,7 @@ class GameWorldTest {
     @Test
     void doesNotRecalculateWhilePlayerRemainsInSameTile() {
         RecordingPathfinder pathfinder = new RecordingPathfinder();
-        GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
+        GameWorld world = new GameWorld(pathfinder);
 
         for (int frame = 0; frame < 120; frame++) {
             world.update(1.0 / 60.0, MovementInput.NONE);
@@ -155,7 +145,7 @@ class GameWorldTest {
     @Test
     void recalculatesOnceWhenPlayerEntersAnotherTile() {
         RecordingPathfinder pathfinder = new RecordingPathfinder();
-        GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
+        GameWorld world = new GameWorld(pathfinder);
 
         for (int frame = 0; frame < 3; frame++) {
             world.update(0.05, new MovementInput(1.0, 0.0));
@@ -182,7 +172,7 @@ class GameWorldTest {
     @Test
     void agentKeepsMovingWhilePlayerChangesDestination() {
         RecordingPathfinder pathfinder = new RecordingPathfinder();
-        GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
+        GameWorld world = new GameWorld(pathfinder);
         double initialAgentY = world.autonomousAgent().y();
 
         for (int frame = 0; frame < 60; frame++) {
@@ -196,7 +186,7 @@ class GameWorldTest {
     @Test
     void recalculatesFromCurrentAgentTile() {
         RecordingPathfinder pathfinder = new RecordingPathfinder();
-        GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
+        GameWorld world = new GameWorld(pathfinder);
 
         world.update(0.80, MovementInput.NONE);
         world.update(0.05, new MovementInput(1.0, 0.0));
@@ -213,7 +203,7 @@ class GameWorldTest {
     @Test
     void stopsOnMissingRouteAndResumesAfterAnotherDestination() {
         RecordingPathfinder pathfinder = new RecordingPathfinder();
-        GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
+        GameWorld world = new GameWorld(pathfinder);
         pathfinder.failNextSearch();
 
         for (int frame = 0; frame < 4; frame++) {
@@ -245,7 +235,7 @@ class GameWorldTest {
 
     @Test
     void changesLaboratoryAndRecreatesAValidInitialRoute() {
-        GameWorld world = new GameWorld(960.0, 640.0);
+        GameWorld world = new GameWorld();
 
         world.selectMap(2);
 
@@ -265,7 +255,7 @@ class GameWorldTest {
     @Test
     void doesNotReloadLaboratoryThatIsAlreadyActive() {
         RecordingPathfinder pathfinder = new RecordingPathfinder();
-        GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
+        GameWorld world = new GameWorld(pathfinder);
 
         world.selectMap(1);
 
@@ -275,7 +265,7 @@ class GameWorldTest {
 
     @Test
     void loadsNextLaboratoryWhenPlayerReachesExit() {
-        GameWorld world = new GameWorld(960.0, 640.0);
+        GameWorld world = new GameWorld();
 
         movePlayerToExit(world);
 
@@ -285,7 +275,7 @@ class GameWorldTest {
 
     @Test
     void finishesEscapeAtExitOfThirdLaboratory() {
-        GameWorld world = new GameWorld(960.0, 640.0);
+        GameWorld world = new GameWorld();
         world.selectMap(3);
 
         movePlayerToExit(world);

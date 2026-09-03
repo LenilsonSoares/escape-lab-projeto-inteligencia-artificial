@@ -14,6 +14,7 @@ public final class GameRenderer {
     private final GraphicsContext graphics;
     private final LaboratoryPainter laboratoryPainter;
     private final LaboratoryEffectsPainter laboratoryEffectsPainter;
+    private final LaboratoryLabelsPainter laboratoryLabelsPainter;
     private final WorldPainter worldPainter;
     private final HudPainter hudPainter;
     private final MapPresentationPainter mapPresentationPainter;
@@ -24,6 +25,7 @@ public final class GameRenderer {
         this.graphics.setImageSmoothing(false);
         this.laboratoryPainter = new LaboratoryPainter(graphics);
         this.laboratoryEffectsPainter = new LaboratoryEffectsPainter(graphics);
+        this.laboratoryLabelsPainter = new LaboratoryLabelsPainter(graphics);
         this.worldPainter = new WorldPainter(graphics);
         this.hudPainter = new HudPainter(graphics);
         this.mapPresentationPainter = new MapPresentationPainter(graphics);
@@ -47,6 +49,7 @@ public final class GameRenderer {
         laboratoryPainter.drawBackground(viewportWidth(), viewportHeight());
         laboratoryPainter.drawMap(world.tileMap(), layout, theme);
         laboratoryEffectsPainter.draw(world.tileMap(), layout, theme);
+        laboratoryLabelsPainter.draw(world.currentMap(), layout, theme);
         graphics.restore();
 
         graphics.save();

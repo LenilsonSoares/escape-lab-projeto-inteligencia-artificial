@@ -16,4 +16,12 @@ class MiniMapPainterTest {
         assertEquals(141.0, MiniMapPainter.proportionalHeight(tileMap, 188.0), EPSILON);
         assertEquals(87.0, MiniMapPainter.proportionalHeight(tileMap, 116.0), EPSILON);
     }
+
+    @Test
+    void fitsWidthToWholePixelsPerTile() {
+        TileMap tileMap = TileMap.createLaboratory();
+
+        assertEquals(180.0, MiniMapPainter.fittedWidth(tileMap, 188.0), EPSILON);
+        assertEquals(100.0, MiniMapPainter.fittedWidth(tileMap, 116.0), EPSILON);
+    }
 }

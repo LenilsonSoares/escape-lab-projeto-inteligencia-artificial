@@ -16,6 +16,8 @@ import javafx.scene.shape.StrokeLineCap;
  */
 final class WorldPainter {
 
+    private static final double PLAYER_VISUAL_SIZE = 40.0;
+    private static final double AGENT_VISUAL_SIZE = 40.0;
     private static final Color PATH_HALO = Color.web("#45d7f2", 0.16);
     private static final Color PATH_OUTER = Color.web("#1696b7", 0.92);
     private static final Color PATH_CORE = Color.web("#8af5ff");
@@ -124,19 +126,21 @@ final class WorldPainter {
         playerAnimation.sample(player.x(), player.y());
         double scale = visualScale(layout);
         playerGlow.setRadius(10.0 * scale);
-        double x = layout.screenX(player.x());
-        double y = layout.screenY(player.y());
-        double size = player.size() * scale;
-        double bob = playerAnimation.moving()
+        double logicalSize = VisualAssets.PLAYER == null ? player.size() : PLAYER_VISUAL_SIZE;
+        double x = layout.screenX(player.centerX() - logicalSize / 2.0);
+        double y = layout.screenY(player.centerY() - logicalSize / 2.0);
+        double size = logicalSize * scale;
+        double bob = Math.rint(playerAnimation.moving()
                 ? Math.abs(Math.sin(visualSeconds() * 9.0)) * 1.15 * scale
-                : 0.0;
+                : 0.0);
+        double spriteY = Math.rint(y - bob);
 
         drawActorShadow(x, y, size, bob, scale);
         if (VisualAssets.PLAYER != null) {
             drawActorSprite(
                     VisualAssets.PLAYER,
                     x,
-                    y - bob,
+                    spriteY,
                     size,
                     playerGlow,
                     playerAnimation.facingLeft()
@@ -145,7 +149,7 @@ final class WorldPainter {
         }
 
         graphics.save();
-        graphics.translate(x + (playerAnimation.facingLeft() ? size : 0.0), y - bob);
+        graphics.translate(x + (playerAnimation.facingLeft() ? size : 0.0), spriteY);
         graphics.scale(playerAnimation.facingLeft() ? -scale : scale, scale);
         drawFallbackPlayer(player.size());
         graphics.restore();
@@ -179,28 +183,33 @@ final class WorldPainter {
         agentAnimation.sample(agent.x(), agent.y());
         double scale = visualScale(layout);
         agentGlow.setRadius(9.0 * scale);
-        double x = layout.screenX(agent.x());
-        double y = layout.screenY(agent.y());
-        double size = agent.size() * scale;
-        double bob = agentAnimation.moving()
+        double logicalSize = VisualAssets.PATHFINDER_ROBOT == null
+                ? agent.size()
+                : AGENT_VISUAL_SIZE;
+        double x = layout.screenX(agent.centerX() - logicalSize / 2.0);
+        double y = layout.screenY(agent.centerY() - logicalSize / 2.0);
+        double size = logicalSize * scale;
+        double bob = Math.rint(agentAnimation.moving()
                 ? Math.abs(Math.sin(visualSeconds() * 7.2 + Math.PI)) * 1.25 * scale
-                : 0.0;
+                : 0.0);
+        double spriteY = Math.rint(y - bob);
 
         drawActorShadow(x, y, size, bob, scale);
         if (VisualAssets.PATHFINDER_ROBOT != null) {
             drawActorSprite(
                     VisualAssets.PATHFINDER_ROBOT,
                     x,
-                    y - bob,
+                    spriteY,
                     size,
                     agentGlow,
                     agentAnimation.facingLeft()
             );
+            drawAgentSignal(x, spriteY, size, scale);
             return;
         }
 
         graphics.save();
-        graphics.translate(x + (agentAnimation.facingLeft() ? size : 0.0), y - bob);
+        graphics.translate(x + (agentAnimation.facingLeft() ? size : 0.0), spriteY);
         graphics.scale(agentAnimation.facingLeft() ? -scale : scale, scale);
         drawFallbackAgent(agent.size());
         graphics.restore();
@@ -229,14 +238,28 @@ final class WorldPainter {
         graphics.fillRect(10.0, size - 6.0, size - 20.0, 2.0);
     }
 
+    private void drawAgentSignal(double x, double y, double size, double scale) {
+        double pulse = (Math.sin(visualSeconds() * 5.5) + 1.0) / 2.0;
+        double lightSize = Math.max(2.0, 2.0 * scale);
+        graphics.setGlobalAlpha(0.55 + pulse * 0.45);
+        graphics.setFill(AGENT_INDICATOR_LIGHT);
+        graphics.fillRect(
+                Math.rint(x + size / 2.0 - lightSize / 2.0),
+                Math.rint(y + 2.0 * scale),
+                lightSize,
+                lightSize
+        );
+        graphics.setGlobalAlpha(1.0);
+    }
+
     private void drawPath(List<GridPosition> path, double tileSize, RenderLayout layout) {
         if (path.isEmpty()) {
             return;
         }
 
         double scale = visualScale(layout);
-        drawPathSegments(path, tileSize, layout, PATH_HALO, 12.0 * scale);
-        drawPathSegments(path, tileSize, layout, PATH_OUTER, 5.0 * scale);
+        drawPathSegments(path, tileSize, layout, PATH_HALO, 9.0 * scale);
+        drawPathSegments(path, tileSize, layout, PATH_OUTER, 4.0 * scale);
         drawPathSegments(path, tileSize, layout, PATH_CORE, 2.0 * scale);
         drawMovingPathPulse(path, tileSize, layout, scale);
 
@@ -335,8 +358,8 @@ final class WorldPainter {
     ) {
         double centerX = tileCenterX(position, tileSize, layout);
         double centerY = tileCenterY(position, tileSize, layout);
-        double outerSize = Math.max(5.0, 8.0 * scale);
-        double coreSize = Math.max(2.0, 4.0 * scale);
+        double outerSize = Math.max(4.0, 6.0 * scale);
+        double coreSize = Math.max(2.0, 3.0 * scale);
         graphics.setFill(PATH_NODE);
         graphics.fillRect(
                 centerX - outerSize / 2.0,

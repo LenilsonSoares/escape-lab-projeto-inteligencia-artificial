@@ -13,9 +13,9 @@ import javafx.scene.paint.Stop;
  */
 enum LaboratoryTheme {
 
-    ESCAPE_ROUTE("#45d7f2", "#1598ad", "#62f4ff", "#7cecff", "#50f2da"),
-    DATA_CORE("#a78bfa", "#7357c9", "#c4b5fd", "#b9a7ff", "#9b87ff"),
-    CONTAINMENT("#ff9f43", "#a94658", "#ffd166", "#ffc46b", "#ff7b54");
+    ESCAPE_ROUTE("#45d7f2", "#1598ad", "#62f4ff", "#7cecff", "#ffb84d"),
+    DATA_CORE("#54c8ff", "#2d6fd2", "#74e9ff", "#9bddff", "#a78bfa"),
+    CONTAINMENT("#56e39f", "#178b67", "#69f5c0", "#82f0d0", "#ffb84d");
 
     private final Color accent;
     private final Color ambientTint;
@@ -78,6 +78,10 @@ enum LaboratoryTheme {
 
     Color equipmentSignal() {
         return equipmentSignal;
+    }
+
+    Color equipmentSignal(double opacity) {
+        return withOpacity(equipmentSignal, opacity);
     }
 
     Paint scanBand() {

@@ -109,6 +109,8 @@ public final class TileMap {
         }
 
         int firstColumn = (int) Math.floor(x / tileSize);
+        // nextDown mantém uma borda exatamente sobre a grade no tile anterior.
+        // Sem isso, um objeto encostado na parede pareceria ocupar dois tiles.
         int lastColumn = (int) Math.floor(Math.nextDown(right) / tileSize);
         int firstRow = (int) Math.floor(y / tileSize);
         int lastRow = (int) Math.floor(Math.nextDown(bottom) / tileSize);

@@ -42,6 +42,8 @@ public final class AStarPathfinder implements Pathfinder {
         requireNavigable(tileMap, start, "A posição inicial");
         requireNavigable(tileMap, destination, "O destino");
 
+        // A fila aberta prioriza o menor f = g + h. A lista fechada impede
+        // que posições já analisadas sejam processadas novamente.
         PriorityQueue<SearchNode> openNodes = new PriorityQueue<>(NODE_ORDER);
         Set<GridPosition> closedNodes = new HashSet<>();
         Map<GridPosition, Integer> pathCosts = new HashMap<>();
@@ -54,6 +56,8 @@ public final class AStarPathfinder implements Pathfinder {
         while (!openNodes.isEmpty()) {
             SearchNode current = openNodes.remove();
             int bestKnownCost = pathCosts.getOrDefault(current.position(), Integer.MAX_VALUE);
+            // Uma mesma posição pode entrar mais de uma vez na fila. Entradas
+            // antigas são ignoradas quando já existe um custo g menor.
             if (current.pathCost() != bestKnownCost
                     || !closedNodes.add(current.position())) {
                 continue;
@@ -69,6 +73,7 @@ public final class AStarPathfinder implements Pathfinder {
                     continue;
                 }
 
+                // Todos os movimentos ortogonais possuem custo unitário.
                 int newCost = current.pathCost() + 1;
                 int knownCost = pathCosts.getOrDefault(neighbor, Integer.MAX_VALUE);
                 if (newCost >= knownCost) {
@@ -82,6 +87,7 @@ public final class AStarPathfinder implements Pathfinder {
             }
         }
 
+        // Fila vazia significa que não existe rota transitável entre os pontos.
         return List.of();
     }
 
@@ -110,6 +116,7 @@ public final class AStarPathfinder implements Pathfinder {
             path.add(current);
         }
 
+        // Os pais levam do destino à origem; a inversão devolve a ordem percorrida.
         Collections.reverse(path);
         return List.copyOf(path);
     }

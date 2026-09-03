@@ -59,7 +59,12 @@ final class MapPresentationPainter {
         } else if (paused) {
             drawPause(logicalLayout);
         } else {
-            drawIntroduction(world, logicalLayout, now);
+            drawIntroduction(
+                    world,
+                    logicalLayout,
+                    LaboratoryTheme.forMap(world.currentMap()),
+                    now
+            );
         }
         graphics.restore();
     }
@@ -115,7 +120,12 @@ final class MapPresentationPainter {
         graphics.setGlobalAlpha(1.0);
     }
 
-    private void drawIntroduction(GameWorld world, RenderLayout layout, long now) {
+    private void drawIntroduction(
+            GameWorld world,
+            RenderLayout layout,
+            LaboratoryTheme theme,
+            long now
+    ) {
         double elapsed = (now - introStartedAt) / 1_000_000_000.0;
         if (elapsed >= INTRO_DURATION_SECONDS) {
             return;
@@ -129,9 +139,9 @@ final class MapPresentationPainter {
         double y = layout.mapY() + 18.0;
 
         graphics.setGlobalAlpha(opacity);
-        drawPanel(x, y, width, height, BORDER);
+        drawPanel(x, y, width, height, theme.accent());
         graphics.setTextAlign(TextAlignment.CENTER);
-        graphics.setFill(BORDER);
+        graphics.setFill(theme.accent());
         graphics.setFont(headingFont);
         graphics.fillText(
                 "MAPA %02d / 03".formatted(world.currentMap().number()),

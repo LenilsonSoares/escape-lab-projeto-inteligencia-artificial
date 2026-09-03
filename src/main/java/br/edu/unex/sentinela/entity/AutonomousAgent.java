@@ -50,6 +50,8 @@ public final class AutonomousAgent {
             throw new IllegalArgumentException("Delta time não pode ser negativo");
         }
 
+        // A distância restante permite atravessar mais de um waypoint em um
+        // quadro sem perder movimento quando o delta time é maior.
         double remainingDistance = speed * deltaTime;
         if (!Double.isFinite(remainingDistance)) {
             throw new IllegalArgumentException("O deslocamento do agente deve ser finito");
@@ -109,7 +111,8 @@ public final class AutonomousAgent {
                 centeredY(start) - y
         );
 
-        // Mantém o avanço quando o primeiro passo da rota não mudou.
+        // Preserva o movimento atual quando o recálculo manteve o próximo passo.
+        // Isso evita pequenas travadas enquanto o destino muda de tile.
         nextWaypointIndex = (continuesCurrentSegment
                 || distanceToStart <= POSITION_EPSILON) ? 1 : 0;
     }

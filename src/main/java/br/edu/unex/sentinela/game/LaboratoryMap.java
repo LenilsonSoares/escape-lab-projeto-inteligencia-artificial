@@ -147,6 +147,8 @@ public enum LaboratoryMap {
     }
 
     private static TileType tileType(char symbol) {
+        // Legenda: ponto = piso, # = parede, E = equipamento e X = saída.
+        // P e A marcam apenas as posições iniciais sobre um piso transitável.
         return switch (symbol) {
             case '.', 'P', 'A' -> TileType.LAB_FLOOR;
             case 'X' -> TileType.EXIT;

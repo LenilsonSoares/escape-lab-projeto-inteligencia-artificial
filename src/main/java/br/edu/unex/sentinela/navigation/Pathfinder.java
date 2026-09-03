@@ -9,6 +9,10 @@ import java.util.List;
 @FunctionalInterface
 public interface Pathfinder {
 
+    /**
+     * Retorna a rota incluindo origem e destino, ou uma lista vazia quando
+     * não existe caminho entre os pontos.
+     */
     List<GridPosition> findPath(
             TileMap tileMap,
             GridPosition start,

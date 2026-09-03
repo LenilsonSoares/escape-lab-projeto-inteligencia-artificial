@@ -90,14 +90,12 @@ final class LaboratoryPainter {
     }
 
     void drawMap(TileMap tileMap, RenderLayout layout, LaboratoryTheme theme) {
-        WritableImage tiles = tileCache.imageFor(tileMap);
+        WritableImage tiles = tileCache.imageFor(tileMap, theme, layout.scale());
         drawMapFrame(layout, theme);
         graphics.drawImage(
                 tiles,
-                layout.mapX(),
-                layout.mapY(),
-                layout.mapWidth(),
-                layout.mapHeight()
+                Math.rint(layout.mapX()),
+                Math.rint(layout.mapY())
         );
         drawMapBorder(layout, theme);
     }

@@ -20,7 +20,7 @@ O Maven Wrapper baixa automaticamente o Maven e as dependências do JavaFX. Pres
 .\mvnw.cmd clean verify
 ```
 
-A suíte atual possui 68 testes automatizados para o Game Loop, entrada, início e pausa, movimento do jogador, animação e temas visuais, três tilemaps, saídas, progressão, colisões, algoritmo A*, troca de rota, deslocamento do agente, layout da interface e integridade dos assets visuais.
+A suíte atual possui 69 testes automatizados para o Game Loop, entrada, início e pausa, movimento do jogador, animação e temas visuais, três tilemaps, saídas, progressão, colisões, algoritmo A*, troca de rota, deslocamento do agente, layout da interface e integridade dos assets visuais.
 
 ## Situação atual
 
@@ -50,6 +50,7 @@ O projeto possui:
 - briefing inicial que aguarda `ENTER` antes de começar a simulação;
 - indicador no cabeçalho com o progresso real pelos três setores;
 - identidade de cor própria para rota de fuga, núcleo de dados e contenção;
+- placas e equipamentos coerentes com a finalidade visual de cada setor;
 - troca de mapa pelas teclas `1`, `2` e `3`;
 - saída verde que carrega o próximo laboratório automaticamente;
 - sinal luminoso na saída e identificação visual breve ao entrar em cada mapa;
@@ -121,6 +122,8 @@ Ao chegar ao destino, o agente para. Se o jogador mudar novamente de tile, uma n
 - antes do início, o painel mostra `AGUARDANDO INÍCIO`;
 - durante a execução, o painel informa a quantidade de passos e o estado `EM ROTA`, `DESTINO ALCANÇADO` ou `SEM ROTA`;
 - a rota possui uma animação visual leve, e o destino pulsa para facilitar a identificação;
+- tiles e sprites são posicionados em pixels inteiros, com suavização desativada;
+- o mapa estático é armazenado em cache já na escala final para evitar redimensionamentos sucessivos;
 - o layout aumenta proporcionalmente em Full HD e 4K, preservando a organização do mapa e dos painéis.
 
 Quando uma nova busca é realizada, o caminho exibido também é atualizado.

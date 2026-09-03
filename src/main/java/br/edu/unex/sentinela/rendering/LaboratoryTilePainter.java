@@ -9,9 +9,6 @@ import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.Paint;
 import javafx.scene.paint.RadialGradient;
 import javafx.scene.paint.Stop;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.TextAlignment;
 
 /**
  * Desenha pisos, paredes, equipamentos e detalhes internos do laboratório.
@@ -23,10 +20,6 @@ final class LaboratoryTilePainter {
     private static final Color FLOOR_B = Color.web("#132a39");
     private static final Color FLOOR_PANEL = Color.web("#1b3a49", 0.72);
     private static final Color FLOOR_DETAIL = Color.web("#2b6070", 0.52);
-    private static final Color FLOOR_LIGHT = Color.web("#39aab5", 0.35);
-    private static final Color FLOOR_AMBER = Color.web("#e6a64b", 0.44);
-    private static final Color FLOOR_VIOLET = Color.web("#ac7cf2", 0.42);
-    private static final Color FLOOR_GREEN = Color.web("#56d69a", 0.40);
 
     private static final Color WALL_SHADOW = Color.web("#101b27");
     private static final Color WALL_BODY = Color.web("#344c5e");
@@ -48,13 +41,6 @@ final class LaboratoryTilePainter {
     private static final Color EXIT_DARK = Color.web("#052218");
     private static final Color EXIT_FRAME = Color.web("#20a860");
     private static final Color EXIT_LIGHT = Color.web("#69f59e");
-    private static final Color SECTOR_TEXT = Color.web("#72e9f4", 0.58);
-    private static final Color SECTOR_PANEL = Color.web("#03101a", 0.64);
-    private static final Color SECTOR_CYAN = Color.web("#62e7ef", 0.70);
-    private static final Color SECTOR_BLUE = Color.web("#67bfff", 0.68);
-    private static final Color SECTOR_VIOLET = Color.web("#ba84f4", 0.68);
-    private static final Color SECTOR_GREEN = Color.web("#62dda1", 0.68);
-    private static final Color SECTOR_AMBER = Color.web("#efb75e", 0.68);
 
     private static final Paint CYAN_LIGHT = new RadialGradient(
             0.0,
@@ -111,16 +97,12 @@ final class LaboratoryTilePainter {
             new Stop(0.0, Color.web("#e2993e", 0.10)),
             new Stop(1.0, Color.TRANSPARENT)
     );
-    private static final Font SECTOR_FONT = Font.font(
-            "Monospaced",
-            FontWeight.BOLD,
-            8.0
-    );
-
     private final GraphicsContext graphics;
+    private final LaboratoryTheme theme;
 
-    LaboratoryTilePainter(GraphicsContext graphics) {
+    LaboratoryTilePainter(GraphicsContext graphics, LaboratoryTheme theme) {
         this.graphics = graphics;
+        this.theme = theme;
     }
 
     void draw(TileMap tileMap, double mapX, double mapY) {
@@ -160,7 +142,6 @@ final class LaboratoryTilePainter {
             }
         }
 
-        drawSectorLabels(tileMap, mapX, mapY);
     }
 
     private void drawFloor(int row, int column, double x, double y, double size) {
@@ -191,6 +172,10 @@ final class LaboratoryTilePainter {
     }
 
     private void drawFloorAccent(int row, int column, double x, double y, double size) {
+        if (detailVariant(row, column) % 3 != 0) {
+            return;
+        }
+
         double unit = size / 40.0;
         int variant = tileVariant(row, column);
         if (variant == 1) {
@@ -248,15 +233,10 @@ final class LaboratoryTilePainter {
     }
 
     private void drawEquipment(int row, int column, double x, double y, double size) {
-        Image equipment = switch (tileVariant(row, column)) {
-            case 0 -> VisualAssets.TERMINAL;
-            case 1 -> VisualAssets.BIO_POD;
-            case 2 -> VisualAssets.CONSOLE;
-            default -> VisualAssets.REACTOR;
-        };
+        Image equipment = equipmentFor(tileVariant(row, column));
         if (equipment != null) {
             drawEquipmentMount(x, y, size);
-            graphics.drawImage(equipment, x + 1.0, y + 1.0, size - 2.0, size - 2.0);
+            graphics.drawImage(equipment, x, y, size, size);
             drawEquipmentIndicator(row, column, x, y, size);
             return;
         }
@@ -367,38 +347,6 @@ final class LaboratoryTilePainter {
                 }
             }
         }
-    }
-
-    private void drawSectorLabels(TileMap tileMap, double mapX, double mapY) {
-        if (tileMap.columns() < 20 || tileMap.rows() < 13) {
-            return;
-        }
-
-        double tileSize = tileMap.tileSize();
-        graphics.setTextAlign(TextAlignment.LEFT);
-        graphics.setFont(SECTOR_FONT);
-        drawSectorLabel("BIO LAB", mapX + 1.2 * tileSize, mapY + 1.65 * tileSize, 64.0, SECTOR_CYAN);
-        drawSectorLabel("DADOS", mapX + 9.15 * tileSize, mapY + 1.65 * tileSize, 54.0, SECTOR_BLUE);
-        drawSectorLabel("CONTROLE", mapX + 16.1 * tileSize, mapY + 1.65 * tileSize, 72.0, SECTOR_VIOLET);
-        drawSectorLabel("SETOR 07", mapX + 6.3 * tileSize, mapY + 6.68 * tileSize, 70.0, SECTOR_CYAN);
-        drawSectorLabel("PESQUISA", mapX + 6.1 * tileSize, mapY + 10.68 * tileSize, 70.0, SECTOR_GREEN);
-        drawSectorLabel("SERVIDORES", mapX + 16.1 * tileSize, mapY + 10.68 * tileSize, 88.0, SECTOR_AMBER);
-    }
-
-    private void drawSectorLabel(
-            String text,
-            double x,
-            double baseline,
-            double panelWidth,
-            Color accent
-    ) {
-        graphics.setFill(SECTOR_PANEL);
-        graphics.fillRoundRect(x - 4.0, baseline - 10.0, panelWidth, 14.0, 3.0, 3.0);
-        graphics.setStroke(accent);
-        graphics.setLineWidth(0.75);
-        graphics.strokeRoundRect(x - 4.0, baseline - 10.0, panelWidth, 14.0, 3.0, 3.0);
-        graphics.setFill(SECTOR_TEXT);
-        graphics.fillText(text, x, baseline);
     }
 
     private void drawEquipmentMount(double x, double y, double size) {
@@ -575,17 +523,28 @@ final class LaboratoryTilePainter {
                 && tileMap.tileAt(row, column) != TileType.WALL;
     }
 
-    private static Color sectorAccent(int row, int column) {
-        if (row <= 4) {
-            if (column >= 14) {
-                return FLOOR_VIOLET;
-            }
-            return column >= 7 ? FLOOR_LIGHT : SECTOR_CYAN;
-        }
-        if (row >= 10) {
-            return column >= 11 ? FLOOR_AMBER : FLOOR_GREEN;
-        }
-        return FLOOR_LIGHT;
+    private Image equipmentFor(int variant) {
+        return switch (theme) {
+            case ESCAPE_ROUTE -> switch (variant) {
+                case 0, 3 -> VisualAssets.TERMINAL;
+                case 1 -> VisualAssets.BIO_POD;
+                default -> VisualAssets.CONSOLE;
+            };
+            case DATA_CORE -> variant % 2 == 0
+                    ? VisualAssets.TERMINAL
+                    : VisualAssets.CONSOLE;
+            case CONTAINMENT -> variant % 2 == 0
+                    ? VisualAssets.REACTOR
+                    : VisualAssets.BIO_POD;
+        };
+    }
+
+    private Color sectorAccent(int row, int column) {
+        boolean secondaryArea = (row <= 4 && column >= 14)
+                || (row >= 10 && column >= 11);
+        return secondaryArea
+                ? theme.equipmentSignal(0.40)
+                : theme.accent(0.35);
     }
 
     private static int detailVariant(int row, int column) {

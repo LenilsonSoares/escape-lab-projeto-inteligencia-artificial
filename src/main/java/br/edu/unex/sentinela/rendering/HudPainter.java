@@ -23,6 +23,7 @@ final class HudPainter {
     private static final Color MUTED = Color.web("#87a5b8");
     private static final Color PLAYER = Color.web("#38d9a9");
     private static final Color AGENT = Color.web("#ffb703");
+    private static final Color DESTINATION = Color.web("#ffd166");
     private static final Color EXIT = Color.web("#52e889");
     private static final Color DANGER = Color.web("#ef476f");
     private static final Color LEGEND_BACKDROP = Color.web("#06121d");
@@ -251,7 +252,14 @@ final class HudPainter {
                 y + 78.0,
                 contentWidth
         );
-        double miniMapWidth = Math.min(contentWidth, layout.compact() ? 136.0 : 188.0);
+        double maximumMiniMapWidth = Math.min(
+                contentWidth,
+                layout.compact() ? 136.0 : 188.0
+        );
+        double miniMapWidth = MiniMapPainter.fittedWidth(
+                world.tileMap(),
+                maximumMiniMapWidth
+        );
         double miniMapHeight = MiniMapPainter.proportionalHeight(world.tileMap(), miniMapWidth);
         double miniMapX = contentX + (contentWidth - miniMapWidth) / 2.0;
         double miniMapY = y + 92.0;
@@ -278,6 +286,9 @@ final class HudPainter {
         );
         GridPosition playerPosition = playerPosition(world);
         GridPosition agentPosition = world.autonomousAgent().currentGridPosition();
+        GridPosition destination = world.escapeCompleted()
+                ? world.currentMap().exitPosition()
+                : world.navigationDestination();
         drawSystemLine(
                 "JOGADOR",
                 "L%02d C%02d".formatted(playerPosition.row(), playerPosition.column()),
@@ -295,19 +306,27 @@ final class HudPainter {
                 contentWidth
         );
         drawSystemLine(
+                "DESTINO",
+                "L%02d C%02d".formatted(destination.row(), destination.column()),
+                DESTINATION,
+                contentX,
+                executionY + 140.0,
+                contentWidth
+        );
+        drawSystemLine(
                 "CAMINHO",
                 world.escapeCompleted()
                         ? "FINALIZADO"
                         : "%02d PASSOS".formatted(Math.max(0, world.navigationPath().size() - 1)),
                 world.escapeCompleted() ? EXIT : ACCENT,
                 contentX,
-                executionY + 140.0,
+                executionY + 166.0,
                 contentWidth
         );
 
-        double systemsY = executionY + 166.0;
+        double systemsY = executionY + 192.0;
         drawDivider(contentX, systemsY - 12.0, contentWidth);
-        drawSectionTitle("SISTEMA", contentX, systemsY + 8.0, contentWidth);
+        drawSectionTitle("SISTEMAS", contentX, systemsY + 8.0, contentWidth);
         drawSystemLine("TILEMAP", "ATIVO", PLAYER, contentX, systemsY + 36.0, contentWidth);
         drawSystemLine("A* DINÂMICO", "ATIVO", ACCENT, contentX, systemsY + 62.0, contentWidth);
         drawSystemLine("COLISÕES", "ATIVO", PLAYER, contentX, systemsY + 88.0, contentWidth);

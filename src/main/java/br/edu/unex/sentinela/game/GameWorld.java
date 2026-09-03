@@ -28,13 +28,12 @@ public final class GameWorld {
     private GridPosition navigationDestination;
     private double timeSinceLastRouteCalculation;
     private boolean escapeCompleted;
-    public GameWorld(double width, double height) {
-        this(width, height, new AStarPathfinder());
+
+    public GameWorld() {
+        this(new AStarPathfinder());
     }
 
-    GameWorld(double width, double height, Pathfinder pathfinder) {
-        requirePositive(width, "width");
-        requirePositive(height, "height");
+    GameWorld(Pathfinder pathfinder) {
         this.pathfinder = Objects.requireNonNull(
                 pathfinder,
                 "O calculador de rotas não pode ser nulo"
@@ -90,6 +89,7 @@ public final class GameWorld {
             return;
         }
 
+        // O intervalo evita executar uma nova busca a cada quadro da animação.
         timeSinceLastRouteCalculation = Math.min(
                 ROUTE_RECALCULATION_INTERVAL_SECONDS,
                 timeSinceLastRouteCalculation + deltaTime
@@ -142,6 +142,7 @@ public final class GameWorld {
     }
 
     private void recalculateRoute(GridPosition newDestination) {
+        // A nova busca parte do tile atual; o agente nunca retorna ao início do mapa.
         GridPosition currentAgentTile = autonomousAgent.currentGridPosition();
         List<GridPosition> newPath = pathfinder.findPath(
                 tileMap,
@@ -170,12 +171,5 @@ public final class GameWorld {
         int row = (int) Math.floor(centerY / tileMap.tileSize());
         int column = (int) Math.floor(centerX / tileMap.tileSize());
         return new GridPosition(row, column);
-    }
-
-    private static double requirePositive(double value, String name) {
-        if (!Double.isFinite(value) || value <= 0.0) {
-            throw new IllegalArgumentException(name + " deve ser maior que zero");
-        }
-        return value;
     }
 }

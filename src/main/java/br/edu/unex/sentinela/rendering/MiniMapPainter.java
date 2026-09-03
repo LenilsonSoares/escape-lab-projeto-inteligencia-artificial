@@ -78,6 +78,18 @@ final class MiniMapPainter {
         return width * tileMap.rows() / tileMap.columns();
     }
 
+    /**
+     * Ajusta a largura para que cada tile ocupe um número inteiro de pixels.
+     */
+    static double fittedWidth(TileMap tileMap, double maximumWidth) {
+        Objects.requireNonNull(tileMap, "tileMap");
+        if (!Double.isFinite(maximumWidth) || maximumWidth <= 0.0) {
+            throw new IllegalArgumentException("A largura máxima deve ser positiva");
+        }
+        int cellSize = Math.max(1, (int) Math.floor(maximumWidth / tileMap.columns()));
+        return cellSize * tileMap.columns();
+    }
+
     private void ensureBase(TileMap tileMap, int width, int height) {
         if (cachedTileMap == tileMap
                 && cachedWidth == width
@@ -88,6 +100,7 @@ final class MiniMapPainter {
 
         Canvas canvas = new Canvas(width, height);
         GraphicsContext cacheGraphics = canvas.getGraphicsContext2D();
+        cacheGraphics.setImageSmoothing(false);
         cacheGraphics.setFill(BACKGROUND);
         cacheGraphics.fillRect(0.0, 0.0, width, height);
 

@@ -13,23 +13,33 @@ import javafx.scene.paint.Color;
 final class LaboratoryTileCache {
 
     private TileMap cachedTileMap;
+    private LaboratoryTheme cachedTheme;
+    private double cachedScale;
     private WritableImage cachedTiles;
 
-    WritableImage imageFor(TileMap tileMap) {
-        if (tileMap == cachedTileMap && cachedTiles != null) {
+    WritableImage imageFor(TileMap tileMap, LaboratoryTheme theme, double scale) {
+        if (tileMap == cachedTileMap
+                && theme == cachedTheme
+                && scale == cachedScale
+                && cachedTiles != null) {
             return cachedTiles;
         }
 
-        Canvas cacheCanvas = new Canvas(tileMap.pixelWidth(), tileMap.pixelHeight());
+        int width = (int) Math.rint(tileMap.pixelWidth() * scale);
+        int height = (int) Math.rint(tileMap.pixelHeight() * scale);
+        Canvas cacheCanvas = new Canvas(width, height);
         GraphicsContext cacheGraphics = cacheCanvas.getGraphicsContext2D();
         cacheGraphics.setImageSmoothing(false);
-        new LaboratoryTilePainter(cacheGraphics).draw(tileMap, 0.0, 0.0);
+        cacheGraphics.scale(scale, scale);
+        new LaboratoryTilePainter(cacheGraphics, theme).draw(tileMap, 0.0, 0.0);
 
         SnapshotParameters snapshotParameters = new SnapshotParameters();
         snapshotParameters.setFill(Color.TRANSPARENT);
-        cachedTiles = new WritableImage(tileMap.pixelWidth(), tileMap.pixelHeight());
+        cachedTiles = new WritableImage(width, height);
         cacheCanvas.snapshot(snapshotParameters, cachedTiles);
         cachedTileMap = tileMap;
+        cachedTheme = theme;
+        cachedScale = scale;
         return cachedTiles;
     }
 }
