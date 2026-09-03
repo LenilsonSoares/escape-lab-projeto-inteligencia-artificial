@@ -12,7 +12,7 @@ No Windows (PowerShell):
 .\mvnw.cmd clean javafx:run
 ```
 
-O Maven Wrapper baixa automaticamente o Maven e as dependências do JavaFX. O jogador azul-esverdeado é controlado por WASD ou pelas setas direcionais. O robô amarelo usa o A* para seguir o tile atual do jogador e atualiza sua rota quando o destino muda.
+O Maven Wrapper baixa automaticamente o Maven e as dependências do JavaFX. Pressione `ENTER` no briefing inicial. O jogador azul-esverdeado é controlado por WASD ou pelas setas direcionais. O robô amarelo usa o A* para navegar até o tile do jogador, utilizado nesta etapa como destino dinâmico. A rota é atualizada quando esse destino muda. Use `ESC` para pausar, `1`, `2` e `3` para trocar o laboratório, `TAB` para mostrar ou ocultar os painéis de diagnóstico e `F11` para alternar a tela cheia.
 
 ## Testes
 
@@ -20,7 +20,7 @@ O Maven Wrapper baixa automaticamente o Maven e as dependências do JavaFX. O jo
 .\mvnw.cmd clean verify
 ```
 
-A suíte atual possui 48 testes automatizados para o Game Loop, movimento do jogador, tilemap, colisões, algoritmo A*, troca de rota, deslocamento do agente, layout da interface e integridade dos assets visuais.
+A suíte atual possui 68 testes automatizados para o Game Loop, entrada, início e pausa, movimento do jogador, animação e temas visuais, três tilemaps, saídas, progressão, colisões, algoritmo A*, troca de rota, deslocamento do agente, layout da interface e integridade dos assets visuais.
 
 ## Situação atual
 
@@ -30,7 +30,7 @@ O projeto possui:
 - Game Loop com delta time;
 - separação entre entrada, atualização e renderização;
 - jogador controlável por WASD ou setas;
-- mapa lógico de laboratório com 15 linhas e 20 colunas, acima do mínimo de 15 × 15;
+- três mapas lógicos de laboratório, cada um com 15 linhas e 20 colunas, acima do mínimo de 15 × 15;
 - tiles de 40 pixels para piso, parede e equipamento;
 - corredores e obstáculos definidos na matriz;
 - colisão com paredes, equipamentos e limites do mapa;
@@ -42,9 +42,36 @@ O projeto possui:
 - caminho atual destacado durante a execução;
 - minimapa construído a partir da mesma matriz usada pelo A*;
 - texturas e sprites originais organizados em `src/main/resources`;
+- variações visuais de pisos, paredes, consoles e equipamentos científicos;
+- iluminação decorativa por setores, sem alterar o mapa lógico;
+- interface responsiva para 720p, Full HD e 4K;
+- painel de diagnóstico que pode ser ocultado com `TAB`;
+- pausa que interrompe a atualização do mundo e pode ser alternada com `ESC`;
+- briefing inicial que aguarda `ENTER` antes de começar a simulação;
+- indicador no cabeçalho com o progresso real pelos três setores;
+- identidade de cor própria para rota de fuga, núcleo de dados e contenção;
+- troca de mapa pelas teclas `1`, `2` e `3`;
+- saída verde que carrega o próximo laboratório automaticamente;
+- sinal luminoso na saída e identificação visual breve ao entrar em cada mapa;
+- iluminação dinâmica, varredura tecnológica e sinais animados nos equipamentos;
+- personagens orientados pela direção e animados somente durante o deslocamento;
+- tela de conclusão da fuga ao alcançar a saída do terceiro mapa;
+- estado final sem rota antiga, mostrando a saída e o caminho como concluídos;
 - testes automatizados com JUnit 5.
 
 O piso metálico azul-escuro é transitável. As paredes modulares, os terminais e as cápsulas científicas são bloqueados. As imagens alteram somente a aparência; a propriedade lógica de cada tile continua definida pelo `TileType`.
+
+## Mapas disponíveis
+
+Os três mapas utilizam a mesma estrutura lógica e o mesmo algoritmo A*. A sequência serve para demonstrar o funcionamento da navegação em disposições diferentes de corredores e obstáculos:
+
+1. `Rota de Fuga`: mapa original do laboratório;
+2. `Núcleo de Dados`: corredores divididos em alas e uma passagem central;
+3. `Contenção`: salas simétricas ligadas por um corredor principal.
+
+Cada mapa possui uma posição inicial válida para o jogador, outra para o robô e uma saída verde. Quando o jogador alcança a saída, o próximo laboratório é carregado, as entidades voltam aos novos pontos iniciais e uma nova rota é calculada. A saída do terceiro mapa conclui a fuga. Todos os pisos transitáveis permanecem conectados.
+
+As teclas `1`, `2` e `3` continuam disponíveis somente como atalhos para demonstrar um mapa específico.
 
 ## Navegação com A* dinâmico
 
@@ -91,19 +118,29 @@ Ao chegar ao destino, o agente para. Se o jogador mudar novamente de tile, uma n
 - o robô amarelo percorre a rota;
 - o jogador azul-esverdeado controla a mudança do destino;
 - o minimapa representa os mesmos pisos, bloqueios, posições e caminho do mapa principal;
-- o painel informa a quantidade de passos e o estado `EM ROTA`, `DESTINO ALCANÇADO` ou `SEM ROTA`.
+- antes do início, o painel mostra `AGUARDANDO INÍCIO`;
+- durante a execução, o painel informa a quantidade de passos e o estado `EM ROTA`, `DESTINO ALCANÇADO` ou `SEM ROTA`;
+- a rota possui uma animação visual leve, e o destino pulsa para facilitar a identificação;
+- o layout aumenta proporcionalmente em Full HD e 4K, preservando a organização do mapa e dos painéis.
 
 Quando uma nova busca é realizada, o caminho exibido também é atualizado.
 
 ## Testar manualmente
 
 1. Execute o jogo com `.\mvnw.cmd clean javafx:run`.
-2. Observe a rota inicial entre o robô amarelo e o jogador azul-esverdeado.
-3. Mova o jogador para outro tile usando WASD ou as setas.
-4. Aguarde até 200 milissegundos e confirme que a linha azul passa a terminar no novo destino.
-5. Caminhe por corredores diferentes e verifique que o robô não atravessa paredes ou equipamentos.
-6. Pare o jogador e aguarde o painel exibir `DESTINO ALCANÇADO`.
-7. Confirme que o robô fica parado e volta a andar quando o jogador muda novamente de tile.
+2. Confira o briefing e pressione `ENTER` para iniciar a simulação.
+3. Observe a rota inicial entre o robô amarelo e o jogador azul-esverdeado.
+4. Mova o jogador para outro tile usando WASD ou as setas.
+5. Aguarde até 200 milissegundos e confirme que a linha azul passa a terminar no novo destino.
+6. Caminhe por corredores diferentes e verifique que o robô não atravessa paredes ou equipamentos.
+7. Pare o jogador e aguarde o painel exibir `DESTINO ALCANÇADO`.
+8. Confirme que o robô fica parado e volta a andar quando o jogador muda novamente de tile.
+9. Pressione `TAB` para ocultar e exibir os dados de diagnóstico.
+10. Pressione `ESC` e confirme que jogador e robô permanecem parados até continuar.
+11. Pressione `F11` para testar o redimensionamento em tela cheia.
+12. Alcance a saída verde e confirme que o próximo laboratório é carregado automaticamente.
+13. No terceiro mapa, alcance a última saída e confirme a mensagem `FUGA CONCLUÍDA`.
+14. Use `1`, `2` e `3` somente se quiser abrir diretamente um mapa para demonstração.
 
 ## Limites desta etapa
 

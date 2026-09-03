@@ -22,6 +22,8 @@ public final class GameEngine extends AnimationTimer {
 
     private long previousFrameTime;
     private MovementInput currentInput = MovementInput.NONE;
+    private boolean sessionStarted;
+    private boolean paused;
 
     public GameEngine(
             InputManager inputManager,
@@ -37,9 +39,13 @@ public final class GameEngine extends AnimationTimer {
 
     @Override
     public void handle(long now) {
+        if (!hasRenderableViewport()) {
+            previousFrameTime = now;
+            return;
+        }
+
         if (previousFrameTime == 0L) {
             previousFrameTime = now;
-            resizeWorldToViewport();
             render();
             return;
         }
@@ -59,26 +65,49 @@ public final class GameEngine extends AnimationTimer {
     }
 
     private void processInput() {
+        if (inputManager.consumeStartRequested()) {
+            sessionStarted = true;
+            paused = false;
+        }
+        if (sessionStarted && inputManager.consumePauseToggleRequested()) {
+            paused = !paused;
+            currentInput = MovementInput.NONE;
+        } else if (!sessionStarted) {
+            inputManager.consumePauseToggleRequested();
+        }
+        int requestedMapNumber = inputManager.consumeRequestedMapNumber();
+        if (requestedMapNumber > 0) {
+            world.selectMap(requestedMapNumber);
+        }
         currentInput = inputManager.movementInput();
     }
 
     private void update(double simulationDeltaTime, double frameTime) {
-        resizeWorldToViewport();
-        world.update(simulationDeltaTime, currentInput);
+        if (sessionStarted && !paused) {
+            world.update(simulationDeltaTime, currentInput);
+        }
         metrics.recordFrame(frameTime);
     }
 
     private void render() {
-        renderer.render(world, metrics);
+        renderer.render(
+                world,
+                metrics,
+                inputManager.debugVisible(),
+                sessionStarted,
+                paused
+        );
     }
 
-    private void resizeWorldToViewport() {
-        world.resize(renderer.viewportWidth(), renderer.viewportHeight());
+    private boolean hasRenderableViewport() {
+        return renderer.viewportWidth() > 0.0 && renderer.viewportHeight() > 0.0;
     }
 
     public void shutdown() {
         stop();
         inputManager.clear();
         previousFrameTime = 0L;
+        sessionStarted = false;
+        paused = false;
     }
 }

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 class GameWorldTest {
 
     private static final double EPSILON = 1.0e-9;
+    private static final double PLAYER_TEST_SPEED = 230.0;
 
     @Test
     void startsPlayerAtConfiguredWalkableTile() {
@@ -38,17 +39,19 @@ class GameWorldTest {
     }
 
     @Test
-    void resizingViewportDoesNotChangePositionInsideMap() {
+    void viewportDimensionsDoNotDefinePlayerPositionInsideMap() {
         GameWorld world = new GameWorld(400.0, 300.0);
-        double initialX = world.player().x();
-        double initialY = world.player().y();
 
-        world.resize(100.0, 80.0);
-
-        assertEquals(initialX, world.player().x(), EPSILON);
-        assertEquals(initialY, world.player().y(), EPSILON);
-        assertEquals(100.0, world.width(), EPSILON);
-        assertEquals(80.0, world.height(), EPSILON);
+        assertEquals(
+                world.tileMap().playerStartX(world.player().size()),
+                world.player().x(),
+                EPSILON
+        );
+        assertEquals(
+                world.tileMap().playerStartY(world.player().size()),
+                world.player().y(),
+                EPSILON
+        );
     }
 
     @Test
@@ -238,6 +241,111 @@ class GameWorldTest {
         assertFalse(world.navigationPath().isEmpty());
         assertEquals(NavigationStatus.MOVING, world.navigationStatus());
         assertEquals(new GridPosition(1, 4), pathfinder.lastDestination());
+    }
+
+    @Test
+    void changesLaboratoryAndRecreatesAValidInitialRoute() {
+        GameWorld world = new GameWorld(960.0, 640.0);
+
+        world.selectMap(2);
+
+        assertEquals(LaboratoryMap.DATA_CORE, world.currentMap());
+        assertEquals(LaboratoryMap.DATA_CORE.tileMap(), world.tileMap());
+        assertEquals(LaboratoryMap.DATA_CORE.agentStart(), world.navigationPath().get(0));
+        assertEquals(
+                new GridPosition(
+                        world.tileMap().playerStartRow(),
+                        world.tileMap().playerStartColumn()
+                ),
+                world.navigationDestination()
+        );
+        assertFalse(world.navigationPath().isEmpty());
+    }
+
+    @Test
+    void doesNotReloadLaboratoryThatIsAlreadyActive() {
+        RecordingPathfinder pathfinder = new RecordingPathfinder();
+        GameWorld world = new GameWorld(960.0, 640.0, pathfinder);
+
+        world.selectMap(1);
+
+        assertEquals(LaboratoryMap.ESCAPE_ROUTE, world.currentMap());
+        assertEquals(1, pathfinder.calls());
+    }
+
+    @Test
+    void loadsNextLaboratoryWhenPlayerReachesExit() {
+        GameWorld world = new GameWorld(960.0, 640.0);
+
+        movePlayerToExit(world);
+
+        assertEquals(LaboratoryMap.DATA_CORE, world.currentMap());
+        assertFalse(world.escapeCompleted());
+    }
+
+    @Test
+    void finishesEscapeAtExitOfThirdLaboratory() {
+        GameWorld world = new GameWorld(960.0, 640.0);
+        world.selectMap(3);
+
+        movePlayerToExit(world);
+        double playerX = world.player().x();
+        double playerY = world.player().y();
+        world.update(1.0, new MovementInput(-1.0, 0.0));
+
+        assertEquals(LaboratoryMap.CONTAINMENT, world.currentMap());
+        assertTrue(world.escapeCompleted());
+        assertEquals(playerX, world.player().x(), EPSILON);
+        assertEquals(playerY, world.player().y(), EPSILON);
+
+        world.selectMap(1);
+        assertFalse(world.escapeCompleted());
+    }
+
+    private static void movePlayerToExit(GameWorld world) {
+        LaboratoryMap expectedMap = world.currentMap();
+        GridPosition start = playerPosition(world);
+        List<GridPosition> route = new AStarPathfinder().findPath(
+                world.tileMap(),
+                start,
+                expectedMap.exitPosition()
+        );
+
+        assertFalse(route.isEmpty());
+        for (int index = 1; index < route.size() && world.currentMap() == expectedMap; index++) {
+            movePlayerToWaypoint(world, expectedMap, route.get(index));
+        }
+    }
+
+    private static void movePlayerToWaypoint(
+            GameWorld world,
+            LaboratoryMap expectedMap,
+            GridPosition waypoint
+    ) {
+        double targetX = (waypoint.column() + 0.5) * world.tileMap().tileSize();
+        double targetY = (waypoint.row() + 0.5) * world.tileMap().tileSize();
+
+        for (int frame = 0; frame < 100 && world.currentMap() == expectedMap; frame++) {
+            double distanceX = targetX - world.player().centerX();
+            double distanceY = targetY - world.player().centerY();
+            if (Math.abs(distanceX) <= EPSILON && Math.abs(distanceY) <= EPSILON) {
+                return;
+            }
+
+            double distance = Math.abs(distanceX) + Math.abs(distanceY);
+            double deltaTime = Math.min(1.0 / 60.0, distance / PLAYER_TEST_SPEED);
+            world.update(
+                    deltaTime,
+                    new MovementInput(Math.signum(distanceX), Math.signum(distanceY))
+            );
+        }
+    }
+
+    private static GridPosition playerPosition(GameWorld world) {
+        return new GridPosition(
+                (int) Math.floor(world.player().centerY() / world.tileMap().tileSize()),
+                (int) Math.floor(world.player().centerX() / world.tileMap().tileSize())
+        );
     }
 
     private static final class RecordingPathfinder implements Pathfinder {

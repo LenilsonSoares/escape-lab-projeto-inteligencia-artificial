@@ -23,7 +23,7 @@ final class HudPainter {
     private static final Color MUTED = Color.web("#87a5b8");
     private static final Color PLAYER = Color.web("#38d9a9");
     private static final Color AGENT = Color.web("#ffb703");
-    private static final Color DESTINATION = Color.web("#ffd166");
+    private static final Color EXIT = Color.web("#52e889");
     private static final Color DANGER = Color.web("#ef476f");
     private static final Color LEGEND_BACKDROP = Color.web("#06121d");
     private static final Color MOVING_BACKGROUND = Color.web("#45d7f2", 0.14);
@@ -32,6 +32,7 @@ final class HudPainter {
 
     private final GraphicsContext graphics;
     private final MiniMapPainter miniMapPainter;
+    private final MapProgressPainter mapProgressPainter;
     private final Font titleFont = Font.font("Monospaced", FontWeight.BOLD, 18.0);
     private final Font compactTitleFont = Font.font("Monospaced", FontWeight.BOLD, 14.0);
     private final Font headingFont = Font.font("Monospaced", FontWeight.BOLD, 12.0);
@@ -43,24 +44,41 @@ final class HudPainter {
     HudPainter(GraphicsContext graphics) {
         this.graphics = graphics;
         this.miniMapPainter = new MiniMapPainter(graphics);
+        this.mapProgressPainter = new MapProgressPainter(graphics);
     }
 
-    void draw(GameWorld world, FrameMetrics metrics, RenderLayout layout) {
-        drawHeader(layout);
-        if (layout.railWidth() >= 120.0) {
-            drawNavigationPanel(world, layout);
-            drawTelemetryPanel(world, metrics, layout);
+    void draw(
+            GameWorld world,
+            FrameMetrics metrics,
+            RenderLayout layout,
+            boolean debugVisible,
+            boolean sessionStarted
+    ) {
+        double scale = layout.scale();
+        RenderLayout logicalLayout = layout.logicalCoordinates();
+
+        graphics.save();
+        graphics.scale(scale, scale);
+        drawHeader(world, logicalLayout, LaboratoryTheme.forMap(world.currentMap()));
+        if (debugVisible && logicalLayout.railWidth() >= 120.0) {
+            drawNavigationPanel(world, logicalLayout, sessionStarted);
+            drawTelemetryPanel(world, metrics, logicalLayout);
         }
-        drawFooter(layout);
+        drawFooter(logicalLayout, debugVisible);
+        graphics.restore();
     }
 
-    private void drawHeader(RenderLayout layout) {
+    private void drawHeader(
+            GameWorld world,
+            RenderLayout layout,
+            LaboratoryTheme theme
+    ) {
         drawTechPanel(
                 layout.mapX(),
                 layout.headerY(),
                 layout.mapWidth(),
                 RenderLayout.BAR_HEIGHT,
-                ACCENT
+                theme.accent()
         );
 
         graphics.setTextAlign(TextAlignment.LEFT);
@@ -72,17 +90,24 @@ final class HudPainter {
                 layout.headerY() + 24.0
         );
 
+        mapProgressPainter.draw(world, layout, theme);
+
         graphics.setTextAlign(TextAlignment.RIGHT);
-        graphics.setFill(ACCENT);
+        graphics.setFill(theme.accent());
         graphics.setFont(headingFont);
         graphics.fillText(
-                "ATIVIDADE  •  A* DINÂMICO",
+                "%s  •  A* DINÂMICO".formatted(world.currentMap().displayName()),
                 layout.mapX() + layout.mapWidth() - 14.0,
-                layout.headerY() + 23.0
+                layout.headerY() + 23.0,
+                layout.mapWidth() * 0.34
         );
     }
 
-    private void drawNavigationPanel(GameWorld world, RenderLayout layout) {
+    private void drawNavigationPanel(
+            GameWorld world,
+            RenderLayout layout,
+            boolean sessionStarted
+    ) {
         double x = layout.leftRailX();
         double y = layout.mapY();
         double width = layout.railWidth();
@@ -92,25 +117,55 @@ final class HudPainter {
         double contentWidth = width - padding * 2.0;
 
         drawTechPanel(x, y, width, height, ACCENT);
-        drawPanelTitle("NAVEGAÇÃO A*", "DESTINO DINÂMICO", contentX, y, contentWidth, layout.compact());
-        drawStatusBadge(
-                world.navigationStatus(),
+        drawPanelTitle(
+                "NAVEGAÇÃO A*",
+                world.escapeCompleted() ? "SEQUÊNCIA FINALIZADA" : "DESTINO DINÂMICO",
                 contentX,
-                y + 56.0,
+                y,
                 contentWidth,
                 layout.compact()
         );
+        if (world.escapeCompleted()) {
+            drawCompletionBadge(contentX, y + 56.0, contentWidth, layout.compact());
+        } else {
+            drawStatusBadge(
+                    world.navigationStatus(),
+                    contentX,
+                    y + 56.0,
+                    contentWidth,
+                    layout.compact(),
+                    sessionStarted
+            );
+        }
 
         drawSectionTitle("OBJETIVO", contentX, y + 112.0, contentWidth);
-        drawInstruction("MOVA O JOGADOR PARA", contentX, y + 136.0, contentWidth);
-        drawInstruction("ALTERAR O DESTINO", contentX, y + 151.0, contentWidth);
+        drawInstruction(
+                world.escapeCompleted() ? "FUGA CONCLUÍDA" : "ALCANCE A SAÍDA VERDE",
+                contentX,
+                y + 136.0,
+                contentWidth
+        );
+        drawInstruction(
+                world.escapeCompleted() ? "MAPAS FINALIZADOS" : "PARA AVANÇAR O MAPA",
+                contentX,
+                y + 151.0,
+                contentWidth
+        );
 
         drawDivider(contentX, y + 170.0, contentWidth);
-        drawSectionTitle("ROTA ATUAL", contentX, y + 196.0, contentWidth);
-        GridPosition destination = world.navigationDestination();
+        drawSectionTitle(
+                world.escapeCompleted() ? "RESULTADO FINAL" : "ROTA ATUAL",
+                contentX,
+                y + 196.0,
+                contentWidth
+        );
+        GridPosition destination = world.escapeCompleted()
+                ? world.currentMap().exitPosition()
+                : world.navigationDestination();
         GridPosition agentPosition = world.autonomousAgent().currentGridPosition();
+        GridPosition playerPosition = playerPosition(world);
         drawMetric(
-                "DESTINO",
+                world.escapeCompleted() ? "DESTINO FINAL" : "DESTINO",
                 "L%02d  C%02d".formatted(destination.row(), destination.column()),
                 contentX,
                 y + 220.0,
@@ -118,8 +173,10 @@ final class HudPainter {
                 layout.compact()
         );
         drawMetric(
-                "AGENTE",
-                "L%02d  C%02d".formatted(agentPosition.row(), agentPosition.column()),
+                world.escapeCompleted() ? "JOGADOR" : "AGENTE",
+                world.escapeCompleted()
+                        ? "L%02d  C%02d".formatted(playerPosition.row(), playerPosition.column())
+                        : "L%02d  C%02d".formatted(agentPosition.row(), agentPosition.column()),
                 contentX,
                 y + 268.0,
                 contentWidth,
@@ -127,7 +184,9 @@ final class HudPainter {
         );
         drawMetric(
                 "CAMINHO",
-                "%02d PASSOS".formatted(Math.max(0, world.navigationPath().size() - 1)),
+                world.escapeCompleted()
+                        ? "CONCLUÍDO"
+                        : "%02d PASSOS".formatted(Math.max(0, world.navigationPath().size() - 1)),
                 contentX,
                 y + 316.0,
                 contentWidth,
@@ -139,12 +198,20 @@ final class HudPainter {
         drawLegendItem(PLAYER, "JOGADOR", contentX, y + 414.0, contentWidth);
         drawLegendItem(AGENT, "ROBÔ A*", contentX, y + 444.0, contentWidth);
         drawLegendItem(ACCENT, "ROTA CALCULADA", contentX, y + 474.0, contentWidth);
-        drawLegendItem(DESTINATION, "DESTINO", contentX, y + 504.0, contentWidth);
+        drawLegendItem(EXIT, "SAÍDA VERDE", contentX, y + 504.0, contentWidth);
 
         graphics.setTextAlign(TextAlignment.LEFT);
         graphics.setFill(MUTED);
         graphics.setFont(smallFont);
-        graphics.fillText("MAPA LÓGICO", contentX, y + height - 55.0, contentWidth);
+        graphics.fillText(
+                "MAPA %d  •  %s".formatted(
+                        world.currentMap().number(),
+                        world.currentMap().displayName()
+                ),
+                contentX,
+                y + height - 55.0,
+                contentWidth
+        );
         graphics.setFill(TEXT);
         graphics.setFont(layout.compact() ? compactValueFont : valueFont);
         graphics.fillText(
@@ -229,8 +296,10 @@ final class HudPainter {
         );
         drawSystemLine(
                 "CAMINHO",
-                "%02d PASSOS".formatted(Math.max(0, world.navigationPath().size() - 1)),
-                ACCENT,
+                world.escapeCompleted()
+                        ? "FINALIZADO"
+                        : "%02d PASSOS".formatted(Math.max(0, world.navigationPath().size() - 1)),
+                world.escapeCompleted() ? EXIT : ACCENT,
                 contentX,
                 executionY + 140.0,
                 contentWidth
@@ -249,7 +318,7 @@ final class HudPainter {
         graphics.fillText("DADOS REAIS DA EXECUÇÃO", contentX, y + height - 20.0, contentWidth);
     }
 
-    private void drawFooter(RenderLayout layout) {
+    private void drawFooter(RenderLayout layout, boolean debugVisible) {
         drawTechPanel(
                 layout.mapX(),
                 layout.footerY(),
@@ -262,7 +331,7 @@ final class HudPainter {
         graphics.setTextAlign(TextAlignment.LEFT);
         graphics.setFill(TEXT);
         graphics.fillText(
-                "MOVER  •  WASD / SETAS",
+                "WASD/SETAS • MOVER   |   ESC • PAUSA   |   1 2 3 • DEMO   |   TAB   |   F11",
                 layout.mapX() + 14.0,
                 layout.footerY() + 23.0
         );
@@ -270,7 +339,9 @@ final class HudPainter {
         graphics.setTextAlign(TextAlignment.RIGHT);
         graphics.setFill(MUTED);
         graphics.fillText(
-                "CIANO: ROTA  •  MARCADOR: DESTINO",
+                debugVisible
+                        ? "CIANO: ROTA  •  VERDE: SAÍDA"
+                        : "PAINÉIS DE DEBUG OCULTOS",
                 layout.mapX() + layout.mapWidth() - 14.0,
                 layout.footerY() + 23.0
         );
@@ -298,7 +369,8 @@ final class HudPainter {
             double x,
             double y,
             double width,
-            boolean compact
+            boolean compact,
+            boolean sessionStarted
     ) {
         Color color = statusColor(navigationStatus);
         graphics.setFill(statusBackground(navigationStatus));
@@ -307,7 +379,22 @@ final class HudPainter {
         graphics.fillRect(x, y, 3.0, 28.0);
         graphics.setTextAlign(TextAlignment.LEFT);
         graphics.setFont(compact ? compactValueFont : headingFont);
-        graphics.fillText(statusText(navigationStatus), x + 10.0, y + 19.0, width - 14.0);
+        graphics.fillText(
+                sessionStarted ? statusText(navigationStatus) : "AGUARDANDO INÍCIO",
+                x + 10.0,
+                y + 19.0,
+                width - 14.0
+        );
+    }
+
+    private void drawCompletionBadge(double x, double y, double width, boolean compact) {
+        graphics.setFill(REACHED_BACKGROUND);
+        graphics.fillRect(x, y, width, 28.0);
+        graphics.setFill(EXIT);
+        graphics.fillRect(x, y, 3.0, 28.0);
+        graphics.setTextAlign(TextAlignment.LEFT);
+        graphics.setFont(compact ? compactValueFont : headingFont);
+        graphics.fillText("FUGA CONCLUÍDA", x + 10.0, y + 19.0, width - 14.0);
     }
 
     private void drawInstruction(String text, double x, double y, double width) {

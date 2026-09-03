@@ -7,10 +7,6 @@ public final class TileMap {
 
     public static final int LABORATORY_TILE_SIZE = 40;
 
-    private static final TileType F = TileType.LAB_FLOOR;
-    private static final TileType W = TileType.WALL;
-    private static final TileType E = TileType.EQUIPMENT;
-
     private final TileType[][] tiles;
     private final int tileSize;
     private final int playerStartRow;
@@ -37,25 +33,7 @@ public final class TileMap {
     }
 
     public static TileMap createLaboratory() {
-        TileType[][] laboratoryTiles = {
-            {W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W},
-            {W, F, F, F, F, F, F, F, F, F, F, F, F, F, W, F, F, F, F, W},
-            {W, F, E, E, F, F, F, W, F, F, F, E, E, F, W, F, E, E, F, W},
-            {W, F, E, E, F, F, F, W, F, F, F, E, E, F, W, F, E, E, F, W},
-            {W, F, F, F, F, F, F, W, F, F, F, F, F, F, F, F, F, F, F, W},
-            {W, W, W, F, W, W, F, W, F, W, W, F, W, W, W, W, F, W, F, W},
-            {W, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, W},
-            {W, F, W, W, W, F, W, W, W, F, W, W, W, F, W, F, W, W, F, W},
-            {W, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, W},
-            {W, W, W, F, W, F, W, W, W, F, W, F, W, W, W, W, F, W, W, W},
-            {W, F, F, F, W, F, F, F, F, F, W, F, F, F, F, F, F, F, F, W},
-            {W, F, E, F, W, F, E, E, E, F, W, F, E, F, W, F, E, E, F, W},
-            {W, F, E, F, F, F, F, F, F, F, F, F, E, F, F, F, E, E, F, W},
-            {W, F, F, F, W, F, F, F, F, F, W, F, F, F, F, F, F, F, F, W},
-            {W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W}
-        };
-
-        return new TileMap(laboratoryTiles, LABORATORY_TILE_SIZE, 1, 4);
+        return LaboratoryMap.ESCAPE_ROUTE.tileMap();
     }
 
     public int rows() {

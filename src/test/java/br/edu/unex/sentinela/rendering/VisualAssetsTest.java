@@ -12,9 +12,13 @@ class VisualAssetsTest {
 
     private static final List<String> ASSET_PATHS = List.of(
             "/br/edu/unex/sentinela/assets/lab-floor.png",
+            "/br/edu/unex/sentinela/assets/lab-floor-alt.png",
             "/br/edu/unex/sentinela/assets/lab-wall.png",
+            "/br/edu/unex/sentinela/assets/lab-wall-alt.png",
             "/br/edu/unex/sentinela/assets/lab-terminal.png",
             "/br/edu/unex/sentinela/assets/lab-bio-pod.png",
+            "/br/edu/unex/sentinela/assets/lab-console.png",
+            "/br/edu/unex/sentinela/assets/lab-reactor.png",
             "/br/edu/unex/sentinela/assets/player.png",
             "/br/edu/unex/sentinela/assets/pathfinder-robot.png"
     );

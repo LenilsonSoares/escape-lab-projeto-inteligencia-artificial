@@ -19,30 +19,40 @@ public final class GameWorld {
     private static final double AGENT_SIZE = 28.0;
     private static final double AGENT_SPEED = 100.0;
     private static final double ROUTE_RECALCULATION_INTERVAL_SECONDS = 0.20;
-    private static final GridPosition AGENT_START = new GridPosition(13, 1);
-
-    private final Player player;
-    private final TileMap tileMap;
     private final Pathfinder pathfinder;
-    private final AutonomousAgent autonomousAgent;
 
+    private Player player;
+    private TileMap tileMap;
+    private AutonomousAgent autonomousAgent;
+    private LaboratoryMap currentMap;
     private GridPosition navigationDestination;
     private double timeSinceLastRouteCalculation;
-    private double width;
-    private double height;
-
+    private boolean escapeCompleted;
     public GameWorld(double width, double height) {
         this(width, height, new AStarPathfinder());
     }
 
     GameWorld(double width, double height, Pathfinder pathfinder) {
-        this.width = requirePositive(width, "width");
-        this.height = requirePositive(height, "height");
+        requirePositive(width, "width");
+        requirePositive(height, "height");
         this.pathfinder = Objects.requireNonNull(
                 pathfinder,
                 "O calculador de rotas não pode ser nulo"
         );
-        this.tileMap = TileMap.createLaboratory();
+        loadMap(LaboratoryMap.ESCAPE_ROUTE);
+    }
+
+    public void selectMap(int mapNumber) {
+        LaboratoryMap selectedMap = LaboratoryMap.fromNumber(mapNumber);
+        if (selectedMap != currentMap) {
+            loadMap(selectedMap);
+        }
+    }
+
+    private void loadMap(LaboratoryMap map) {
+        this.currentMap = Objects.requireNonNull(map, "O mapa não pode ser nulo");
+        this.escapeCompleted = false;
+        this.tileMap = map.tileMap();
         this.player = new Player(
                 tileMap.playerStartX(PLAYER_SIZE),
                 tileMap.playerStartY(PLAYER_SIZE),
@@ -53,7 +63,7 @@ public final class GameWorld {
 
         List<GridPosition> initialPath = pathfinder.findPath(
                 tileMap,
-                AGENT_START,
+                map.agentStart(),
                 navigationDestination
         );
         if (initialPath.isEmpty()) {
@@ -65,27 +75,32 @@ public final class GameWorld {
                 AGENT_SIZE,
                 AGENT_SPEED
         );
+        this.timeSinceLastRouteCalculation = 0.0;
     }
 
     public void update(double deltaTime, MovementInput movementInput) {
+        if (escapeCompleted) {
+            return;
+        }
+
         player.update(movementInput, deltaTime, tileMap);
+        GridPosition currentPlayerTile = gridPositionAt(player.centerX(), player.centerY());
+        if (currentPlayerTile.equals(currentMap.exitPosition())) {
+            advanceMap();
+            return;
+        }
+
         timeSinceLastRouteCalculation = Math.min(
                 ROUTE_RECALCULATION_INTERVAL_SECONDS,
                 timeSinceLastRouteCalculation + deltaTime
         );
 
-        GridPosition currentPlayerTile = gridPositionAt(player.centerX(), player.centerY());
         if (!currentPlayerTile.equals(navigationDestination)
                 && timeSinceLastRouteCalculation >= ROUTE_RECALCULATION_INTERVAL_SECONDS) {
             recalculateRoute(currentPlayerTile);
         }
 
         autonomousAgent.update(deltaTime);
-    }
-
-    public void resize(double width, double height) {
-        this.width = requirePositive(width, "width");
-        this.height = requirePositive(height, "height");
     }
 
     public Player player() {
@@ -118,12 +133,12 @@ public final class GameWorld {
         return autonomousAgent;
     }
 
-    public double width() {
-        return width;
+    public LaboratoryMap currentMap() {
+        return currentMap;
     }
 
-    public double height() {
-        return height;
+    public boolean escapeCompleted() {
+        return escapeCompleted;
     }
 
     private void recalculateRoute(GridPosition newDestination) {
@@ -141,6 +156,14 @@ public final class GameWorld {
         } else {
             autonomousAgent.replacePath(newPath);
         }
+    }
+
+    private void advanceMap() {
+        if (currentMap.number() == LaboratoryMap.values().length) {
+            escapeCompleted = true;
+            return;
+        }
+        loadMap(LaboratoryMap.fromNumber(currentMap.number() + 1));
     }
 
     private GridPosition gridPositionAt(double centerX, double centerY) {

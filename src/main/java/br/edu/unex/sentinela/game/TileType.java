@@ -7,7 +7,8 @@ public enum TileType {
 
     LAB_FLOOR(true),
     WALL(false),
-    EQUIPMENT(false);
+    EQUIPMENT(false),
+    EXIT(true);
 
     private final boolean walkable;
 

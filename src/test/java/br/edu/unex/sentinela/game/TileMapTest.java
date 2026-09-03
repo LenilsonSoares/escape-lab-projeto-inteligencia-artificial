@@ -59,7 +59,7 @@ class TileMapTest {
     }
 
     @Test
-    void containsAllThreeTileTypes() {
+    void containsEveryTileType() {
         TileMap tileMap = TileMap.createLaboratory();
         Set<TileType> typesInMap = EnumSet.noneOf(TileType.class);
 

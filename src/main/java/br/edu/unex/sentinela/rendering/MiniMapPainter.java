@@ -21,6 +21,7 @@ final class MiniMapPainter {
     private static final Color FLOOR = Color.web("#173245");
     private static final Color WALL = Color.web("#4a6275");
     private static final Color EQUIPMENT = Color.web("#88465a");
+    private static final Color EXIT = Color.web("#52e889");
     private static final Color BORDER = Color.web("#2c6a83");
     private static final Color PATH = Color.web("#66ecff");
     private static final Color PLAYER = Color.web("#38d9a9");
@@ -43,8 +44,10 @@ final class MiniMapPainter {
         ensureBase(world.tileMap(), imageWidth, imageHeight);
 
         graphics.drawImage(cachedBase, x, y, width, height);
-        drawPath(world, x, y, width, height);
-        drawDestination(world, x, y, width, height);
+        if (!world.escapeCompleted()) {
+            drawPath(world, x, y, width, height);
+            drawDestination(world, x, y, width, height);
+        }
         drawMarker(
                 playerPosition(world),
                 PLAYER,
@@ -186,6 +189,7 @@ final class MiniMapPainter {
             case LAB_FLOOR -> FLOOR;
             case WALL -> WALL;
             case EQUIPMENT -> EQUIPMENT;
+            case EXIT -> EXIT;
         };
     }
 
