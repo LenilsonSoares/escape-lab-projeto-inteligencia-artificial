@@ -20,7 +20,7 @@ O Maven Wrapper baixa automaticamente o Maven e as dependências do JavaFX. Pres
 .\mvnw.cmd clean verify
 ```
 
-A suíte atual possui 69 testes automatizados para o Game Loop, entrada, início e pausa, movimento do jogador, animação e temas visuais, três tilemaps, saídas, progressão, colisões, algoritmo A*, troca de rota, deslocamento do agente, layout da interface e integridade dos assets visuais.
+A suíte atual possui 70 testes automatizados para o Game Loop, entrada, início e pausa, movimento do jogador, animação e temas visuais, três tilemaps, saídas, progressão, colisões, algoritmo A*, troca de rota, deslocamento do agente, layout da interface e integridade dos assets visuais.
 
 ## Situação atual
 
@@ -49,13 +49,14 @@ O projeto possui:
 - pausa que interrompe a atualização do mundo e pode ser alternada com `ESC`;
 - briefing inicial que aguarda `ENTER` antes de começar a simulação;
 - indicador no cabeçalho com o progresso real pelos três setores;
-- identidade de cor própria para rota de fuga, núcleo de dados e contenção;
-- placas e equipamentos coerentes com a finalidade visual de cada setor;
+- identidade de cor própria para rota, iluminação e equipamentos de cada setor;
+- equipamentos coerentes com a finalidade visual de cada setor, sem placas decorativas sobre os corredores;
 - troca de mapa pelas teclas `1`, `2` e `3`;
 - saída verde que carrega o próximo laboratório automaticamente;
-- sinal luminoso na saída e identificação visual breve ao entrar em cada mapa;
+- porta de evacuação, placa e sinal luminoso na saída;
+- transição visual curta ao entrar em cada mapa;
 - iluminação dinâmica, varredura tecnológica e sinais animados nos equipamentos;
-- personagens orientados pela direção e animados somente durante o deslocamento;
+- personagens orientados pela direção e com quatro estados visuais de caminhada;
 - tela de conclusão da fuga ao alcançar a saída do terceiro mapa;
 - estado final sem rota antiga, mostrando a saída e o caminho como concluídos;
 - testes automatizados com JUnit 5.
@@ -114,7 +115,7 @@ Ao chegar ao destino, o agente para. Se o jogador mudar novamente de tile, uma n
 
 ### Representação visual
 
-- a linha azul-clara mostra o caminho atual;
+- a linha luminosa, na cor do setor, mostra o caminho atual;
 - o marcador amarelo identifica o destino atual e fica vermelho quando não existe uma rota até ele;
 - o robô amarelo percorre a rota;
 - o jogador azul-esverdeado controla a mudança do destino;
@@ -134,7 +135,7 @@ Quando uma nova busca é realizada, o caminho exibido também é atualizado.
 2. Confira o briefing e pressione `ENTER` para iniciar a simulação.
 3. Observe a rota inicial entre o robô amarelo e o jogador azul-esverdeado.
 4. Mova o jogador para outro tile usando WASD ou as setas.
-5. Aguarde até 200 milissegundos e confirme que a linha azul passa a terminar no novo destino.
+5. Aguarde até 200 milissegundos e confirme que a rota luminosa passa a terminar no novo destino.
 6. Caminhe por corredores diferentes e verifique que o robô não atravessa paredes ou equipamentos.
 7. Pare o jogador e aguarde o painel exibir `DESTINO ALCANÇADO`.
 8. Confirme que o robô fica parado e volta a andar quando o jogador muda novamente de tile.

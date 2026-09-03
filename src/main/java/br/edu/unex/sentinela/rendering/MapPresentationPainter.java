@@ -14,7 +14,9 @@ final class MapPresentationPainter {
 
     private static final double INTRO_DURATION_SECONDS = 2.2;
     private static final double INTRO_FADE_SECONDS = 0.55;
+    private static final double SECTOR_FADE_SECONDS = 0.45;
     private static final Color PANEL = Color.web("#04101b", 0.94);
+    private static final Color SECTOR_FADE = Color.web("#01060d");
     private static final Color BORDER = Color.web("#45d7f2");
     private static final Color TEXT = Color.web("#e9f5ff");
     private static final Color MUTED = Color.web("#87a5b8");
@@ -59,14 +61,33 @@ final class MapPresentationPainter {
         } else if (paused) {
             drawPause(logicalLayout);
         } else {
+            LaboratoryTheme theme = LaboratoryTheme.forMap(world.currentMap());
+            drawSectorFade(logicalLayout, theme, now);
             drawIntroduction(
                     world,
                     logicalLayout,
-                    LaboratoryTheme.forMap(world.currentMap()),
+                    theme,
                     now
             );
         }
         graphics.restore();
+    }
+
+    private void drawSectorFade(RenderLayout layout, LaboratoryTheme theme, long now) {
+        double elapsed = (now - introStartedAt) / 1_000_000_000.0;
+        if (elapsed >= SECTOR_FADE_SECONDS) {
+            return;
+        }
+
+        double progress = elapsed / SECTOR_FADE_SECONDS;
+        graphics.setGlobalAlpha((1.0 - progress) * 0.82);
+        graphics.setFill(SECTOR_FADE);
+        graphics.fillRect(layout.mapX(), layout.mapY(), layout.mapWidth(), layout.mapHeight());
+        graphics.setGlobalAlpha((1.0 - progress) * 0.55);
+        graphics.setStroke(theme.accent());
+        graphics.setLineWidth(2.0);
+        graphics.strokeRect(layout.mapX(), layout.mapY(), layout.mapWidth(), layout.mapHeight());
+        graphics.setGlobalAlpha(1.0);
     }
 
     private void drawBriefing(RenderLayout layout, long now) {

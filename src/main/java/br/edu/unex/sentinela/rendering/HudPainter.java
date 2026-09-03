@@ -57,15 +57,16 @@ final class HudPainter {
     ) {
         double scale = layout.scale();
         RenderLayout logicalLayout = layout.logicalCoordinates();
+        LaboratoryTheme theme = LaboratoryTheme.forMap(world.currentMap());
 
         graphics.save();
         graphics.scale(scale, scale);
-        drawHeader(world, logicalLayout, LaboratoryTheme.forMap(world.currentMap()));
+        drawHeader(world, logicalLayout, theme);
         if (debugVisible && logicalLayout.railWidth() >= 120.0) {
-            drawNavigationPanel(world, logicalLayout, sessionStarted);
-            drawTelemetryPanel(world, metrics, logicalLayout);
+            drawNavigationPanel(world, logicalLayout, sessionStarted, theme);
+            drawTelemetryPanel(world, metrics, logicalLayout, theme);
         }
-        drawFooter(logicalLayout, debugVisible);
+        drawFooter(logicalLayout, debugVisible, theme);
         graphics.restore();
     }
 
@@ -107,7 +108,8 @@ final class HudPainter {
     private void drawNavigationPanel(
             GameWorld world,
             RenderLayout layout,
-            boolean sessionStarted
+            boolean sessionStarted,
+            LaboratoryTheme theme
     ) {
         double x = layout.leftRailX();
         double y = layout.mapY();
@@ -117,7 +119,7 @@ final class HudPainter {
         double contentX = x + padding;
         double contentWidth = width - padding * 2.0;
 
-        drawTechPanel(x, y, width, height, ACCENT);
+        drawTechPanel(x, y, width, height, theme.accent());
         drawPanelTitle(
                 "NAVEGAÇÃO A*",
                 world.escapeCompleted() ? "SEQUÊNCIA FINALIZADA" : "DESTINO DINÂMICO",
@@ -198,7 +200,7 @@ final class HudPainter {
         drawSectionTitle("LEGENDA", contentX, y + 384.0, contentWidth);
         drawLegendItem(PLAYER, "JOGADOR", contentX, y + 414.0, contentWidth);
         drawLegendItem(AGENT, "ROBÔ A*", contentX, y + 444.0, contentWidth);
-        drawLegendItem(ACCENT, "ROTA CALCULADA", contentX, y + 474.0, contentWidth);
+        drawLegendItem(theme.routeCore(), "ROTA CALCULADA", contentX, y + 474.0, contentWidth);
         drawLegendItem(EXIT, "SAÍDA VERDE", contentX, y + 504.0, contentWidth);
 
         graphics.setTextAlign(TextAlignment.LEFT);
@@ -230,7 +232,8 @@ final class HudPainter {
     private void drawTelemetryPanel(
             GameWorld world,
             FrameMetrics metrics,
-            RenderLayout layout
+            RenderLayout layout,
+            LaboratoryTheme theme
     ) {
         double x = layout.rightRailX();
         double y = layout.mapY();
@@ -318,7 +321,7 @@ final class HudPainter {
                 world.escapeCompleted()
                         ? "FINALIZADO"
                         : "%02d PASSOS".formatted(Math.max(0, world.navigationPath().size() - 1)),
-                world.escapeCompleted() ? EXIT : ACCENT,
+                world.escapeCompleted() ? EXIT : theme.routeCore(),
                 contentX,
                 executionY + 166.0,
                 contentWidth
@@ -328,7 +331,14 @@ final class HudPainter {
         drawDivider(contentX, systemsY - 12.0, contentWidth);
         drawSectionTitle("SISTEMAS", contentX, systemsY + 8.0, contentWidth);
         drawSystemLine("TILEMAP", "ATIVO", PLAYER, contentX, systemsY + 36.0, contentWidth);
-        drawSystemLine("A* DINÂMICO", "ATIVO", ACCENT, contentX, systemsY + 62.0, contentWidth);
+        drawSystemLine(
+                "A* DINÂMICO",
+                "ATIVO",
+                theme.routeCore(),
+                contentX,
+                systemsY + 62.0,
+                contentWidth
+        );
         drawSystemLine("COLISÕES", "ATIVO", PLAYER, contentX, systemsY + 88.0, contentWidth);
 
         graphics.setTextAlign(TextAlignment.LEFT);
@@ -337,7 +347,11 @@ final class HudPainter {
         graphics.fillText("DADOS REAIS DA EXECUÇÃO", contentX, y + height - 20.0, contentWidth);
     }
 
-    private void drawFooter(RenderLayout layout, boolean debugVisible) {
+    private void drawFooter(
+            RenderLayout layout,
+            boolean debugVisible,
+            LaboratoryTheme theme
+    ) {
         drawTechPanel(
                 layout.mapX(),
                 layout.footerY(),
@@ -356,10 +370,10 @@ final class HudPainter {
         );
 
         graphics.setTextAlign(TextAlignment.RIGHT);
-        graphics.setFill(MUTED);
+        graphics.setFill(debugVisible ? theme.routeCore() : MUTED);
         graphics.fillText(
                 debugVisible
-                        ? "CIANO: ROTA  •  VERDE: SAÍDA"
+                        ? "COR DO SETOR: ROTA  •  VERDE: SAÍDA"
                         : "PAINÉIS DE DEBUG OCULTOS",
                 layout.mapX() + layout.mapWidth() - 14.0,
                 layout.footerY() + 23.0

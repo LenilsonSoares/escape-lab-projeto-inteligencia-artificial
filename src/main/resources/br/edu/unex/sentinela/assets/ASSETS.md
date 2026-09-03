@@ -12,6 +12,7 @@ Os arquivos possuem 80 × 80 pixels e são desenhados pelo JavaFX em tiles de 40
 - `lab-bio-pod.png`: equipamento bloqueado;
 - `lab-console.png`: console científico bloqueado;
 - `lab-reactor.png`: reator selado bloqueado;
+- `lab-exit.png`: porta de evacuação transitável;
 - `player.png`: jogador;
 - `pathfinder-robot.png`: agente do A*.
 

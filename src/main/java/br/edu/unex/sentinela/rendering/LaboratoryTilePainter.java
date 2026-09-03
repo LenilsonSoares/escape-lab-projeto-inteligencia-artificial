@@ -259,6 +259,11 @@ final class LaboratoryTilePainter {
     }
 
     private void drawExit(double x, double y, double size) {
+        if (VisualAssets.EXIT != null) {
+            graphics.drawImage(VisualAssets.EXIT, x, y, size, size);
+            return;
+        }
+
         double unit = size / 40.0;
         graphics.setFill(EXIT_DARK);
         graphics.fillRect(x + 3.0 * unit, y + 3.0 * unit, size - 6.0 * unit, size - 6.0 * unit);
@@ -279,44 +284,42 @@ final class LaboratoryTilePainter {
             double mapWidth,
             double mapHeight
     ) {
-        graphics.setFill(CYAN_LIGHT);
-        graphics.fillOval(
-                mapX + mapWidth * 0.025,
-                mapY + mapHeight * 0.045,
-                mapWidth * 0.29,
-                mapHeight * 0.32
-        );
+        switch (theme) {
+            case ESCAPE_ROUTE -> {
+                drawLight(CYAN_LIGHT, mapX, mapY, mapWidth, mapHeight, 0.02, 0.04, 0.31, 0.34);
+                drawLight(BLUE_LIGHT, mapX, mapY, mapWidth, mapHeight, 0.36, 0.03, 0.31, 0.35);
+                drawLight(AMBER_LIGHT, mapX, mapY, mapWidth, mapHeight, 0.67, 0.61, 0.30, 0.33);
+            }
+            case DATA_CORE -> {
+                drawLight(BLUE_LIGHT, mapX, mapY, mapWidth, mapHeight, 0.05, 0.04, 0.38, 0.36);
+                drawLight(CYAN_LIGHT, mapX, mapY, mapWidth, mapHeight, 0.45, 0.03, 0.50, 0.38);
+                drawLight(MAGENTA_LIGHT, mapX, mapY, mapWidth, mapHeight, 0.42, 0.60, 0.44, 0.34);
+            }
+            case CONTAINMENT -> {
+                drawLight(GREEN_LIGHT, mapX, mapY, mapWidth, mapHeight, 0.03, 0.03, 0.42, 0.38);
+                drawLight(CYAN_LIGHT, mapX, mapY, mapWidth, mapHeight, 0.51, 0.03, 0.44, 0.37);
+                drawLight(AMBER_LIGHT, mapX, mapY, mapWidth, mapHeight, 0.36, 0.58, 0.48, 0.38);
+            }
+        }
+    }
 
-        graphics.setFill(BLUE_LIGHT);
+    private void drawLight(
+            Paint light,
+            double mapX,
+            double mapY,
+            double mapWidth,
+            double mapHeight,
+            double x,
+            double y,
+            double width,
+            double height
+    ) {
+        graphics.setFill(light);
         graphics.fillOval(
-                mapX + mapWidth * 0.35,
-                mapY + mapHeight * 0.035,
-                mapWidth * 0.30,
-                mapHeight * 0.34
-        );
-
-        graphics.setFill(MAGENTA_LIGHT);
-        graphics.fillOval(
-                mapX + mapWidth * 0.69,
-                mapY + mapHeight * 0.035,
-                mapWidth * 0.28,
-                mapHeight * 0.34
-        );
-
-        graphics.setFill(GREEN_LIGHT);
-        graphics.fillOval(
-                mapX + mapWidth * 0.20,
-                mapY + mapHeight * 0.63,
-                mapWidth * 0.35,
-                mapHeight * 0.32
-        );
-
-        graphics.setFill(AMBER_LIGHT);
-        graphics.fillOval(
-                mapX + mapWidth * 0.68,
-                mapY + mapHeight * 0.62,
-                mapWidth * 0.29,
-                mapHeight * 0.32
+                mapX + mapWidth * x,
+                mapY + mapHeight * y,
+                mapWidth * width,
+                mapHeight * height
         );
     }
 

@@ -14,8 +14,9 @@ public final class GameRenderer {
     private final GraphicsContext graphics;
     private final LaboratoryPainter laboratoryPainter;
     private final LaboratoryEffectsPainter laboratoryEffectsPainter;
-    private final LaboratoryLabelsPainter laboratoryLabelsPainter;
     private final WorldPainter worldPainter;
+    private final ExitPainter exitPainter;
+    private final ActorPainter actorPainter;
     private final HudPainter hudPainter;
     private final MapPresentationPainter mapPresentationPainter;
 
@@ -25,8 +26,9 @@ public final class GameRenderer {
         this.graphics.setImageSmoothing(false);
         this.laboratoryPainter = new LaboratoryPainter(graphics);
         this.laboratoryEffectsPainter = new LaboratoryEffectsPainter(graphics);
-        this.laboratoryLabelsPainter = new LaboratoryLabelsPainter(graphics);
         this.worldPainter = new WorldPainter(graphics);
+        this.exitPainter = new ExitPainter(graphics);
+        this.actorPainter = new ActorPainter(graphics);
         this.hudPainter = new HudPainter(graphics);
         this.mapPresentationPainter = new MapPresentationPainter(graphics);
     }
@@ -49,7 +51,6 @@ public final class GameRenderer {
         laboratoryPainter.drawBackground(viewportWidth(), viewportHeight());
         laboratoryPainter.drawMap(world.tileMap(), layout, theme);
         laboratoryEffectsPainter.draw(world.tileMap(), layout, theme);
-        laboratoryLabelsPainter.draw(world.currentMap(), layout, theme);
         graphics.restore();
 
         graphics.save();
@@ -59,16 +60,18 @@ public final class GameRenderer {
                     world.navigationDestination(),
                     world.navigationStatus(),
                     world.tileMap().tileSize(),
-                    layout
+                    layout,
+                    theme
             );
         }
-        worldPainter.drawExitBeacon(
-                world.currentMap().exitPosition(),
+        exitPainter.draw(
+                world.currentMap(),
+                world.player(),
                 world.tileMap().tileSize(),
                 layout
         );
-        worldPainter.drawAgent(world.autonomousAgent(), layout);
-        worldPainter.drawPlayer(world.player(), layout);
+        actorPainter.drawAgent(world.autonomousAgent(), layout);
+        actorPainter.drawPlayer(world.player(), layout);
         graphics.restore();
 
         graphics.save();

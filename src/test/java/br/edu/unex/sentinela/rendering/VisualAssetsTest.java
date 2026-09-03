@@ -19,6 +19,7 @@ class VisualAssetsTest {
             "/br/edu/unex/sentinela/assets/lab-bio-pod.png",
             "/br/edu/unex/sentinela/assets/lab-console.png",
             "/br/edu/unex/sentinela/assets/lab-reactor.png",
+            "/br/edu/unex/sentinela/assets/lab-exit.png",
             "/br/edu/unex/sentinela/assets/player.png",
             "/br/edu/unex/sentinela/assets/pathfinder-robot.png"
     );

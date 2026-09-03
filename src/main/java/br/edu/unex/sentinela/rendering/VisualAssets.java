@@ -17,6 +17,7 @@ final class VisualAssets {
     static final Image BIO_POD = load("lab-bio-pod.png");
     static final Image CONSOLE = load("lab-console.png");
     static final Image REACTOR = load("lab-reactor.png");
+    static final Image EXIT = load("lab-exit.png");
     static final Image PLAYER = load("player.png");
     static final Image PATHFINDER_ROBOT = load("pathfinder-robot.png");
 

@@ -29,5 +29,13 @@ class LaboratoryThemeTest {
         assertNotEquals(LaboratoryTheme.ESCAPE_ROUTE.accent(), LaboratoryTheme.DATA_CORE.accent());
         assertNotEquals(LaboratoryTheme.DATA_CORE.accent(), LaboratoryTheme.CONTAINMENT.accent());
         assertNotEquals(LaboratoryTheme.CONTAINMENT.accent(), LaboratoryTheme.ESCAPE_ROUTE.accent());
+        assertNotEquals(
+                LaboratoryTheme.ESCAPE_ROUTE.routeCore(),
+                LaboratoryTheme.DATA_CORE.routeCore()
+        );
+        assertNotEquals(
+                LaboratoryTheme.DATA_CORE.routeCore(),
+                LaboratoryTheme.CONTAINMENT.routeCore()
+        );
     }
 }

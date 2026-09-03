@@ -22,6 +22,10 @@ enum LaboratoryTheme {
     private final Color scanCore;
     private final Color particle;
     private final Color equipmentSignal;
+    private final Color routeHalo;
+    private final Color routeOuter;
+    private final Color routeCore;
+    private final Color routePulse;
     private final Paint scanBand;
 
     LaboratoryTheme(
@@ -36,6 +40,10 @@ enum LaboratoryTheme {
         this.scanCore = Color.web(scanCore, 0.17);
         this.particle = Color.web(particle);
         this.equipmentSignal = Color.web(equipmentSignal);
+        this.routeHalo = withOpacity(this.accent, 0.16);
+        this.routeOuter = withOpacity(this.accent, 0.92);
+        this.routeCore = this.accent.interpolate(Color.WHITE, 0.48);
+        this.routePulse = withOpacity(this.accent.interpolate(Color.WHITE, 0.82), 0.96);
         this.scanBand = new LinearGradient(
                 0.0,
                 0.0,
@@ -82,6 +90,22 @@ enum LaboratoryTheme {
 
     Color equipmentSignal(double opacity) {
         return withOpacity(equipmentSignal, opacity);
+    }
+
+    Color routeHalo() {
+        return routeHalo;
+    }
+
+    Color routeOuter() {
+        return routeOuter;
+    }
+
+    Color routeCore() {
+        return routeCore;
+    }
+
+    Color routePulse() {
+        return routePulse;
     }
 
     Paint scanBand() {

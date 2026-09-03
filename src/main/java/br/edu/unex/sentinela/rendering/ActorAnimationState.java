@@ -6,12 +6,14 @@ package br.edu.unex.sentinela.rendering;
 final class ActorAnimationState {
 
     private static final double MOVEMENT_EPSILON = 1.0e-4;
+    private static final double DISTANCE_PER_FRAME = 4.0;
 
     private boolean initialized;
     private boolean moving;
     private boolean facingLeft;
     private double previousX;
     private double previousY;
+    private double traveledDistance;
 
     void sample(double x, double y) {
         if (!initialized) {
@@ -24,7 +26,11 @@ final class ActorAnimationState {
 
         double movementX = x - previousX;
         double movementY = y - previousY;
-        moving = Math.hypot(movementX, movementY) > MOVEMENT_EPSILON;
+        double movementDistance = Math.hypot(movementX, movementY);
+        moving = movementDistance > MOVEMENT_EPSILON;
+        if (moving) {
+            traveledDistance += movementDistance;
+        }
         if (Math.abs(movementX) > MOVEMENT_EPSILON) {
             facingLeft = movementX < 0.0;
         }
@@ -39,5 +45,12 @@ final class ActorAnimationState {
 
     boolean facingLeft() {
         return facingLeft;
+    }
+
+    int walkFrame() {
+        if (!moving) {
+            return 0;
+        }
+        return (int) (traveledDistance / DISTANCE_PER_FRAME) % 4;
     }
 }

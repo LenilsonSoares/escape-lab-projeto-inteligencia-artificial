@@ -23,7 +23,6 @@ final class MiniMapPainter {
     private static final Color EQUIPMENT = Color.web("#88465a");
     private static final Color EXIT = Color.web("#52e889");
     private static final Color BORDER = Color.web("#2c6a83");
-    private static final Color PATH = Color.web("#66ecff");
     private static final Color PLAYER = Color.web("#38d9a9");
     private static final Color AGENT = Color.web("#ffb703");
     private static final Color DESTINATION = Color.web("#ffd166");
@@ -139,7 +138,7 @@ final class MiniMapPainter {
         TileMap tileMap = world.tileMap();
         double cellWidth = width / tileMap.columns();
         double cellHeight = height / tileMap.rows();
-        graphics.setStroke(PATH);
+        graphics.setStroke(LaboratoryTheme.forMap(world.currentMap()).routeCore());
         graphics.setLineWidth(1.5);
         for (int index = 1; index < world.navigationPath().size(); index++) {
             GridPosition previous = world.navigationPath().get(index - 1);
