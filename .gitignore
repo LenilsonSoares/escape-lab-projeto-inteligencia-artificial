@@ -27,6 +27,9 @@ replay_pid*
 target/
 .mvn/timing.properties
 
+# Local Java runtime
+/tmp/runtime/
+
 # Project documentation
 /docs/
 

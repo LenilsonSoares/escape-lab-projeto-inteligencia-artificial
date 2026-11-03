@@ -4,7 +4,7 @@ Projeto final da disciplina Projeto de Inteligência Artificial. O jogo é uma a
 
 ## Executar
 
-Pré-requisito: JDK 21 ou superior configurado no `JAVA_HOME`.
+Pré-requisito: JDK 25 LTS configurado no `JAVA_HOME`.
 
 No Windows (PowerShell):
 
