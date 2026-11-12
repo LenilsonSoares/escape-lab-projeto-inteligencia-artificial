@@ -1,175 +1,135 @@
 package br.edu.unex.sentinela.game;
 
 import br.edu.unex.sentinela.entity.AutonomousAgent;
+import br.edu.unex.sentinela.entity.Enemy;
+import br.edu.unex.sentinela.entity.EnemyType;
 import br.edu.unex.sentinela.entity.Player;
 import br.edu.unex.sentinela.input.MovementInput;
 import br.edu.unex.sentinela.navigation.AStarPathfinder;
 import br.edu.unex.sentinela.navigation.GridPosition;
 import br.edu.unex.sentinela.navigation.Pathfinder;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Mantém o estado atual do mundo e aplica suas regras de atualização.
- */
+/** Mantém o mundo e os três comportamentos de navegação dos robôs. */
 public final class GameWorld {
-
     private static final double PLAYER_SIZE = 34.0;
     private static final double PLAYER_SPEED = 230.0;
-    private static final double AGENT_SIZE = 28.0;
-    private static final double AGENT_SPEED = 100.0;
-    private static final double ROUTE_RECALCULATION_INTERVAL_SECONDS = 0.20;
-    private final Pathfinder pathfinder;
-
+    private final Pathfinder chaserPathfinder;
     private Player player;
     private TileMap tileMap;
-    private AutonomousAgent autonomousAgent;
+    private List<Enemy> enemies;
     private LaboratoryMap currentMap;
-    private GridPosition navigationDestination;
-    private double timeSinceLastRouteCalculation;
     private boolean escapeCompleted;
+    private int score = 1_000;
+    private int penalties;
+    private final EnumSet<EnemyType> touchingEnemies = EnumSet.noneOf(EnemyType.class);
 
     public GameWorld() {
         this(new AStarPathfinder());
     }
 
-    GameWorld(Pathfinder pathfinder) {
-        this.pathfinder = Objects.requireNonNull(
-                pathfinder,
-                "O calculador de rotas não pode ser nulo"
-        );
+    GameWorld(Pathfinder chaserPathfinder) {
+        this.chaserPathfinder = Objects.requireNonNull(chaserPathfinder);
         loadMap(LaboratoryMap.ESCAPE_ROUTE);
     }
 
     public void selectMap(int mapNumber) {
-        LaboratoryMap selectedMap = LaboratoryMap.fromNumber(mapNumber);
-        if (selectedMap != currentMap) {
-            loadMap(selectedMap);
+        LaboratoryMap selected = LaboratoryMap.fromNumber(mapNumber);
+        if (selected != currentMap) {
+            loadMap(selected);
         }
     }
 
     private void loadMap(LaboratoryMap map) {
-        this.currentMap = Objects.requireNonNull(map, "O mapa não pode ser nulo");
-        this.escapeCompleted = false;
-        this.tileMap = map.tileMap();
-        this.player = new Player(
-                tileMap.playerStartX(PLAYER_SIZE),
-                tileMap.playerStartY(PLAYER_SIZE),
-                PLAYER_SIZE,
-                PLAYER_SPEED
-        );
-        this.navigationDestination = gridPositionAt(player.centerX(), player.centerY());
+        currentMap = Objects.requireNonNull(map);
+        escapeCompleted = false;
+        tileMap = map.tileMap();
+        touchingEnemies.clear();
+        player = new Player(tileMap.playerStartX(PLAYER_SIZE), tileMap.playerStartY(PLAYER_SIZE),
+                PLAYER_SIZE, PLAYER_SPEED);
+        GridPosition playerTile = gridPositionAt(player.centerX(), player.centerY());
+        GridPosition patrolStart = nearestFloor(new GridPosition(13, 18), List.of(playerTile, map.agentStart()));
+        GridPosition interceptorStart = nearestFloor(new GridPosition(7, 10),
+                List.of(playerTile, map.agentStart(), patrolStart));
+        List<GridPosition> patrolPoints = List.of(
+                nearestFloor(new GridPosition(1, 18), List.of()),
+                nearestFloor(new GridPosition(1, 1), List.of()),
+                nearestFloor(new GridPosition(13, 1), List.of()), patrolStart);
+        // Cada robô mantém uma busca e uma rota independentes.
+        enemies = List.of(
+                new Enemy(EnemyType.CHASER, tileMap, map.agentStart(), playerTile,
+                        List.of(), chaserPathfinder),
+                new Enemy(EnemyType.PATROLLER, tileMap, patrolStart, playerTile,
+                        patrolPoints, new AStarPathfinder()),
+                new Enemy(EnemyType.INTERCEPTOR, tileMap, interceptorStart, playerTile,
+                        List.of(), new AStarPathfinder()));
+    }
 
-        List<GridPosition> initialPath = pathfinder.findPath(
-                tileMap,
-                map.agentStart(),
-                navigationDestination
-        );
-        if (initialPath.isEmpty()) {
-            throw new IllegalStateException("Não foi possível calcular a rota do agente");
+    private GridPosition nearestFloor(GridPosition preferred, List<GridPosition> excluded) {
+        List<GridPosition> candidates = new ArrayList<>();
+        for (int row = 0; row < tileMap.rows(); row++) {
+            for (int column = 0; column < tileMap.columns(); column++) {
+                GridPosition point = new GridPosition(row, column);
+                if (tileMap.tileAt(row, column) == TileType.LAB_FLOOR && !excluded.contains(point)) {
+                    candidates.add(point);
+                }
+            }
         }
-        this.autonomousAgent = new AutonomousAgent(
-                tileMap,
-                initialPath,
-                AGENT_SIZE,
-                AGENT_SPEED
-        );
-        this.timeSinceLastRouteCalculation = 0.0;
+        return candidates.stream()
+                .min(Comparator.comparingInt(preferred::manhattanDistanceTo)).orElseThrow();
     }
 
     public void update(double deltaTime, MovementInput movementInput) {
         if (escapeCompleted) {
             return;
         }
-
+        double previousX = player.x();
+        double previousY = player.y();
         player.update(movementInput, deltaTime, tileMap);
-        GridPosition currentPlayerTile = gridPositionAt(player.centerX(), player.centerY());
-        if (currentPlayerTile.equals(currentMap.exitPosition())) {
-            advanceMap();
+        GridPosition playerTile = gridPositionAt(player.centerX(), player.centerY());
+        if (playerTile.equals(currentMap.exitPosition())) {
+            if (currentMap.number() == LaboratoryMap.values().length) {
+                escapeCompleted = true;
+            } else {
+                loadMap(LaboratoryMap.fromNumber(currentMap.number() + 1));
+            }
             return;
         }
-
-        // O intervalo evita executar uma nova busca a cada quadro da animação.
-        timeSinceLastRouteCalculation = Math.min(
-                ROUTE_RECALCULATION_INTERVAL_SECONDS,
-                timeSinceLastRouteCalculation + deltaTime
-        );
-
-        if (!currentPlayerTile.equals(navigationDestination)
-                && timeSinceLastRouteCalculation >= ROUTE_RECALCULATION_INTERVAL_SECONDS) {
-            recalculateRoute(currentPlayerTile);
-        }
-
-        autonomousAgent.update(deltaTime);
-    }
-
-    public Player player() {
-        return player;
-    }
-
-    public TileMap tileMap() {
-        return tileMap;
-    }
-
-    public List<GridPosition> navigationPath() {
-        return autonomousAgent.path();
-    }
-
-    public GridPosition navigationDestination() {
-        return navigationDestination;
-    }
-
-    public NavigationStatus navigationStatus() {
-        if (navigationPath().isEmpty()) {
-            return NavigationStatus.NO_PATH;
-        }
-        if (autonomousAgent.hasReachedDestination()) {
-            return NavigationStatus.DESTINATION_REACHED;
-        }
-        return NavigationStatus.MOVING;
-    }
-
-    public AutonomousAgent autonomousAgent() {
-        return autonomousAgent;
-    }
-
-    public LaboratoryMap currentMap() {
-        return currentMap;
-    }
-
-    public boolean escapeCompleted() {
-        return escapeCompleted;
-    }
-
-    private void recalculateRoute(GridPosition newDestination) {
-        // A nova busca parte do tile atual; o agente nunca retorna ao início do mapa.
-        GridPosition currentAgentTile = autonomousAgent.currentGridPosition();
-        List<GridPosition> newPath = pathfinder.findPath(
-                tileMap,
-                currentAgentTile,
-                newDestination
-        );
-
-        navigationDestination = newDestination;
-        timeSinceLastRouteCalculation = 0.0;
-        if (newPath.isEmpty()) {
-            autonomousAgent.stop();
-        } else {
-            autonomousAgent.replacePath(newPath);
+        MovementInput actualMovement = new MovementInput(player.x() - previousX, player.y() - previousY);
+        for (Enemy enemy : enemies) {
+            enemy.update(deltaTime, playerTile, actualMovement);
+            boolean touching = player.x() < enemy.agent().x() + enemy.agent().size()
+                    && player.x() + player.size() > enemy.agent().x()
+                    && player.y() < enemy.agent().y() + enemy.agent().size()
+                    && player.y() + player.size() > enemy.agent().y();
+            if (touching && touchingEnemies.add(enemy.type())) {
+                score = Math.max(0, score - 100);
+                penalties++;
+            } else if (!touching) {
+                touchingEnemies.remove(enemy.type());
+            }
         }
     }
 
-    private void advanceMap() {
-        if (currentMap.number() == LaboratoryMap.values().length) {
-            escapeCompleted = true;
-            return;
-        }
-        loadMap(LaboratoryMap.fromNumber(currentMap.number() + 1));
-    }
+    public Player player() { return player; }
+    public TileMap tileMap() { return tileMap; }
+    public List<Enemy> enemies() { return enemies; }
+    // O painel principal acompanha o perseguidor amarelo.
+    public List<GridPosition> navigationPath() { return autonomousAgent().path(); }
+    public GridPosition navigationDestination() { return enemies.getFirst().destination(); }
+    public NavigationStatus navigationStatus() { return enemies.getFirst().navigationStatus(); }
+    public AutonomousAgent autonomousAgent() { return enemies.getFirst().agent(); }
+    public LaboratoryMap currentMap() { return currentMap; }
+    public boolean escapeCompleted() { return escapeCompleted; }
+    public int score() { return score; }
+    public int penalties() { return penalties; }
 
-    private GridPosition gridPositionAt(double centerX, double centerY) {
-        int row = (int) Math.floor(centerY / tileMap.tileSize());
-        int column = (int) Math.floor(centerX / tileMap.tileSize());
-        return new GridPosition(row, column);
+    private GridPosition gridPositionAt(double x, double y) {
+        return new GridPosition((int) Math.floor(y / tileMap.tileSize()),
+                (int) Math.floor(x / tileMap.tileSize()));
     }
 }

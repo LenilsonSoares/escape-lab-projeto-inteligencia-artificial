@@ -1,6 +1,7 @@
 package br.edu.unex.sentinela.rendering;
 
 import br.edu.unex.sentinela.game.GameWorld;
+import br.edu.unex.sentinela.entity.Enemy;
 import br.edu.unex.sentinela.telemetry.FrameMetrics;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -55,6 +56,11 @@ public final class GameRenderer {
 
         graphics.save();
         if (!world.escapeCompleted()) {
+            for (Enemy enemy : world.enemies()) {
+                if (enemy != world.enemies().getFirst()) {
+                    worldPainter.drawEnemyNavigation(enemy, world.tileMap().tileSize(), layout);
+                }
+            }
             worldPainter.drawNavigation(
                     world.navigationPath(),
                     world.navigationDestination(),
@@ -70,7 +76,9 @@ public final class GameRenderer {
                 world.tileMap().tileSize(),
                 layout
         );
-        actorPainter.drawAgent(world.autonomousAgent(), layout);
+        for (Enemy enemy : world.enemies()) {
+            actorPainter.drawEnemy(enemy, layout);
+        }
         actorPainter.drawPlayer(world.player(), layout);
         graphics.restore();
 

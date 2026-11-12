@@ -1,6 +1,7 @@
 package br.edu.unex.sentinela.rendering;
 
 import br.edu.unex.sentinela.game.NavigationStatus;
+import br.edu.unex.sentinela.entity.Enemy;
 import br.edu.unex.sentinela.navigation.GridPosition;
 import java.util.List;
 import javafx.scene.canvas.GraphicsContext;
@@ -59,6 +60,20 @@ final class WorldPainter {
         for (GridPosition position : path) {
             drawPathNode(position, tileSize, layout, scale, theme.routeCore());
         }
+    }
+
+    void drawEnemyNavigation(Enemy enemy, double tileSize, RenderLayout layout) {
+        graphics.save();
+        Color identity = Color.web(enemy.type().color());
+        graphics.setGlobalAlpha(0.6);
+        drawPathSegments(enemy.agent().path(), tileSize, layout, identity, 2.0 * layout.scale());
+        graphics.setStroke(identity);
+        graphics.setLineWidth(Math.max(1.0, layout.scale()));
+        double inset = 8.0 * layout.scale();
+        graphics.strokeRect(tileX(enemy.destination(), tileSize, layout) + inset,
+                tileY(enemy.destination(), tileSize, layout) + inset,
+                tileSize * layout.scale() - 2 * inset, tileSize * layout.scale() - 2 * inset);
+        graphics.restore();
     }
 
     /**

@@ -128,7 +128,7 @@ final class MapPresentationPainter {
                 width - 30.0
         );
         graphics.fillText(
-                "O ROBÔ RECALCULA A ROTA QUANDO O DESTINO MUDA",
+                "3 ROBÔS A* • CONTATO COM INIMIGO: -100 PONTOS",
                 x + width / 2.0,
                 y + 188.0,
                 width - 36.0

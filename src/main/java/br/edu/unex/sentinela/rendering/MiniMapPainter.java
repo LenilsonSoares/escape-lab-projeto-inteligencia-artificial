@@ -1,6 +1,7 @@
 package br.edu.unex.sentinela.rendering;
 
 import br.edu.unex.sentinela.game.GameWorld;
+import br.edu.unex.sentinela.entity.Enemy;
 import br.edu.unex.sentinela.game.TileMap;
 import br.edu.unex.sentinela.game.TileType;
 import br.edu.unex.sentinela.navigation.GridPosition;
@@ -24,7 +25,6 @@ final class MiniMapPainter {
     private static final Color EXIT = Color.web("#52e889");
     private static final Color BORDER = Color.web("#2c6a83");
     private static final Color PLAYER = Color.web("#38d9a9");
-    private static final Color AGENT = Color.web("#ffb703");
     private static final Color DESTINATION = Color.web("#ffd166");
 
     private final GraphicsContext graphics;
@@ -57,16 +57,10 @@ final class MiniMapPainter {
                 height,
                 5.0
         );
-        drawMarker(
-                world.autonomousAgent().currentGridPosition(),
-                AGENT,
-                world.tileMap(),
-                x,
-                y,
-                width,
-                height,
-                4.0
-        );
+        for (Enemy enemy : world.enemies()) {
+            drawMarker(enemy.agent().currentGridPosition(), Color.web(enemy.type().color()),
+                    world.tileMap(), x, y, width, height, 4.0);
+        }
     }
 
     static double proportionalHeight(TileMap tileMap, double width) {

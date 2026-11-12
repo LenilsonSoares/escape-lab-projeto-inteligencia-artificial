@@ -1,11 +1,17 @@
 package br.edu.unex.sentinela.rendering;
 
 import br.edu.unex.sentinela.entity.AutonomousAgent;
+import br.edu.unex.sentinela.entity.Enemy;
+import br.edu.unex.sentinela.entity.EnemyType;
 import br.edu.unex.sentinela.entity.Player;
+import java.util.EnumMap;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.TextAlignment;
 
 /** Desenha e anima visualmente o jogador e o agente autônomo. */
 final class ActorPainter {
@@ -14,7 +20,6 @@ final class ActorPainter {
     private static final double AGENT_VISUAL_SIZE = 40.0;
     private static final Color ACTOR_SHADOW = Color.web("#01050b", 0.72);
     private static final Color PLAYER_LOCATOR = Color.web("#38d9a9", 0.62);
-    private static final Color AGENT_LOCATOR = Color.web("#ffb703", 0.62);
 
     private static final Color PLAYER_OUTLINE = Color.web("#063b43");
     private static final Color PLAYER_BODY = Color.web("#1fc7a5");
@@ -32,7 +37,9 @@ final class ActorPainter {
     private final DropShadow playerGlow = new DropShadow(10.0, Color.web("#38d9a9", 0.56));
     private final DropShadow agentGlow = new DropShadow(9.0, Color.web("#ffb703", 0.58));
     private final ActorAnimationState playerAnimation = new ActorAnimationState();
-    private final ActorAnimationState agentAnimation = new ActorAnimationState();
+    private final EnumMap<EnemyType, ActorAnimationState> agentAnimations = new EnumMap<>(EnemyType.class);
+    private final ColorAdjust patrolTint = new ColorAdjust(-0.70, 0.25, 0.0, 0.0);
+    private final ColorAdjust interceptorTint = new ColorAdjust(-0.20, 0.25, 0.0, 0.0);
 
     ActorPainter(GraphicsContext graphics) {
         this.graphics = graphics;
@@ -66,7 +73,17 @@ final class ActorPainter {
         graphics.restore();
     }
 
-    void drawAgent(AutonomousAgent agent, RenderLayout layout) {
+    void drawEnemy(Enemy enemy, RenderLayout layout) {
+        AutonomousAgent agent = enemy.agent();
+        ActorAnimationState agentAnimation = agentAnimations.computeIfAbsent(
+                enemy.type(), ignored -> new ActorAnimationState());
+        Color identity = Color.web(enemy.type().color());
+        agentGlow.setColor(identity);
+        agentGlow.setInput(switch (enemy.type()) {
+            case CHASER -> null;
+            case PATROLLER -> patrolTint;
+            case INTERCEPTOR -> interceptorTint;
+        });
         agentAnimation.sample(agent.x(), agent.y());
         double scale = layout.scale();
         agentGlow.setRadius(9.0 * scale);
@@ -80,8 +97,12 @@ final class ActorPainter {
                 : 0.0);
         double spriteY = Math.rint(y - bob);
 
-        drawLocator(x, y, size, scale, AGENT_LOCATOR);
+        drawLocator(x, y, size, scale, identity);
         drawShadow(x, y, size, bob, scale);
+        graphics.setFont(Font.font("Monospaced", 8.0 * scale));
+        graphics.setTextAlign(TextAlignment.CENTER);
+        graphics.setFill(identity);
+        graphics.fillText(enemy.type().displayName(), x + size / 2.0, y - 5.0 * scale);
         if (VisualAssets.PATHFINDER_ROBOT != null) {
             drawSprite(VisualAssets.PATHFINDER_ROBOT, x, spriteY, size, agentGlow,
                     agentAnimation.facingLeft(), agentAnimation.walkFrame(), scale);

@@ -14,13 +14,25 @@ No Windows (PowerShell):
 
 O Maven Wrapper baixa automaticamente o Maven e as dependências do JavaFX. Pressione `ENTER` no briefing inicial. O jogador azul-esverdeado é controlado por WASD ou pelas setas direcionais. O robô amarelo usa o A* para navegar até o tile do jogador, utilizado nesta etapa como destino dinâmico. A rota é atualizada quando esse destino muda. Use `ESC` para pausar, `1`, `2` e `3` para trocar o laboratório, `TAB` para mostrar ou ocultar os painéis de diagnóstico e `F11` para alternar a tela cheia.
 
+## Três tipos de inimigos e penalidade
+
+Cada setor possui três robôs simultâneos, identificados pela cor e pelo nome:
+
+- **Perseguidor amarelo:** usa A* para alcançar o tile atual do jogador; velocidade de 100 pixels por segundo.
+- **Patrulheiro roxo:** usa A* para percorrer ciclicamente quatro pontos fixos do laboratório, independentemente do jogador; velocidade de 80 pixels por segundo.
+- **Interceptador vermelho:** usa A* para alcançar até dois tiles à frente do jogador na direção do movimento real. A previsão para antes de paredes, equipamentos e limites; quando o jogador para, o destino volta ao tile atual dele. Velocidade de 120 pixels por segundo.
+
+Os três usam o mesmo algoritmo de busca, com rotas e destinos independentes e intervalo mínimo de 200 milissegundos entre buscas de cada robô. Os mapas mostram as rotas dos três; o minimapa identifica suas posições por cor. Os diagnósticos principais de destino e passos continuam acompanhando o perseguidor amarelo.
+
+A partida começa com **1.000 pontos**. Cada novo contato entre jogador e inimigo desconta **100 pontos**, sem deixar o total negativo. Permanecer encostado no mesmo inimigo não gera novas penalidades: é preciso se separar e tocar novamente. Cada inimigo contabiliza seu contato independentemente. A pontuação e o total de penalidades são mantidos ao trocar de setor. Chegar a zero pontos não encerra a partida. Os pontos aparecem no cabeçalho, e o painel de diagnóstico mostra também a quantidade de penalidades.
+
 ## Testes
 
 ```powershell
 .\mvnw.cmd clean verify
 ```
 
-A suíte atual possui 70 testes automatizados para o Game Loop, entrada, início e pausa, movimento do jogador, animação e temas visuais, três tilemaps, saídas, progressão, colisões, algoritmo A*, troca de rota, deslocamento do agente, layout da interface e integridade dos assets visuais.
+A suíte atual possui 77 testes automatizados cobrindo entrada, movimento, mapas, progressão, colisões, A*, animação, layout, assets, perseguição, patrulha, interceptação e penalidades por contato.
 
 ## Situação atual
 

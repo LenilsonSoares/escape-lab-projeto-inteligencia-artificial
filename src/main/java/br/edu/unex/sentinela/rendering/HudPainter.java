@@ -87,9 +87,10 @@ final class HudPainter {
         graphics.setFill(TEXT);
         graphics.setFont(titleFont);
         graphics.fillText(
-                "ESCAPE LAB",
+                "ESCAPE LAB • %04d PTS".formatted(world.score()),
                 layout.mapX() + 14.0,
-                layout.headerY() + 24.0
+                layout.headerY() + 24.0,
+                layout.mapWidth() * 0.36
         );
 
         mapProgressPainter.draw(world, layout, theme);
@@ -122,7 +123,7 @@ final class HudPainter {
         drawTechPanel(x, y, width, height, theme.accent());
         drawPanelTitle(
                 "NAVEGAÇÃO A*",
-                world.escapeCompleted() ? "SEQUÊNCIA FINALIZADA" : "DESTINO DINÂMICO",
+                world.escapeCompleted() ? "SEQUÊNCIA FINALIZADA" : "ROTA DO PERSEGUIDOR",
                 contentX,
                 y,
                 contentWidth,
@@ -157,7 +158,7 @@ final class HudPainter {
 
         drawDivider(contentX, y + 170.0, contentWidth);
         drawSectionTitle(
-                world.escapeCompleted() ? "RESULTADO FINAL" : "ROTA ATUAL",
+                world.escapeCompleted() ? "RESULTADO FINAL" : "PERSEGUIDOR AMARELO",
                 contentX,
                 y + 196.0,
                 contentWidth
@@ -198,10 +199,11 @@ final class HudPainter {
 
         drawDivider(contentX, y + 358.0, contentWidth);
         drawSectionTitle("LEGENDA", contentX, y + 384.0, contentWidth);
-        drawLegendItem(PLAYER, "JOGADOR", contentX, y + 414.0, contentWidth);
-        drawLegendItem(AGENT, "ROBÔ A*", contentX, y + 444.0, contentWidth);
-        drawLegendItem(theme.routeCore(), "ROTA CALCULADA", contentX, y + 474.0, contentWidth);
-        drawLegendItem(EXIT, "SAÍDA VERDE", contentX, y + 504.0, contentWidth);
+        drawLegendItem(PLAYER, "JOGADOR", contentX, y + 410.0, contentWidth);
+        drawLegendItem(AGENT, "PERSEGUIDOR", contentX, y + 434.0, contentWidth);
+        drawLegendItem(Color.web("#b58aff"), "PATRULHEIRO", contentX, y + 458.0, contentWidth);
+        drawLegendItem(Color.web("#ff5878"), "INTERCEPTADOR", contentX, y + 482.0, contentWidth);
+        drawLegendItem(EXIT, "SAÍDA VERDE", contentX, y + 506.0, contentWidth);
 
         graphics.setTextAlign(TextAlignment.LEFT);
         graphics.setFill(MUTED);
@@ -330,16 +332,16 @@ final class HudPainter {
         double systemsY = executionY + 192.0;
         drawDivider(contentX, systemsY - 12.0, contentWidth);
         drawSectionTitle("SISTEMAS", contentX, systemsY + 8.0, contentWidth);
-        drawSystemLine("TILEMAP", "ATIVO", PLAYER, contentX, systemsY + 36.0, contentWidth);
+        drawSystemLine("PONTOS", "%04d".formatted(world.score()), PLAYER, contentX, systemsY + 36.0, contentWidth);
         drawSystemLine(
-                "A* DINÂMICO",
-                "ATIVO",
+                "PENALIDADES",
+                "%d".formatted(world.penalties()),
                 theme.routeCore(),
                 contentX,
                 systemsY + 62.0,
                 contentWidth
         );
-        drawSystemLine("COLISÕES", "ATIVO", PLAYER, contentX, systemsY + 88.0, contentWidth);
+        drawSystemLine("CONTATO", "-100 PTS", DANGER, contentX, systemsY + 88.0, contentWidth);
 
         graphics.setTextAlign(TextAlignment.LEFT);
         graphics.setFill(MUTED);
