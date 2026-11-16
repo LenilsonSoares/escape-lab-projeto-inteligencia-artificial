@@ -27,8 +27,13 @@ replay_pid*
 target/
 .mvn/timing.properties
 
-# Local Java runtime
-/tmp/runtime/
+# Arquivos temporários locais
+/tmp/
+
+# Material das aulas e imagens de referência ficam só na máquina de cada um
+/docs/*.pdf
+!/docs/Projeto+Final*.pdf
+/docs/ChatGPT Image*
 
 # IDEs
 .idea/

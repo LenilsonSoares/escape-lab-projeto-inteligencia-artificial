@@ -1,7 +1,6 @@
 package br.edu.unex.sentinela.rendering;
 
 import br.edu.unex.sentinela.ai.memory.AgentMemory;
-import br.edu.unex.sentinela.ai.memory.AlertLevel;
 import br.edu.unex.sentinela.entity.AutonomousAgent;
 import br.edu.unex.sentinela.entity.Enemy;
 import br.edu.unex.sentinela.entity.Player;
