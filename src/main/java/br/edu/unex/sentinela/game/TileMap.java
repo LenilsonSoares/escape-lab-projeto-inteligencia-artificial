@@ -11,6 +11,7 @@ public final class TileMap {
     private final int tileSize;
     private final int playerStartRow;
     private final int playerStartColumn;
+    private boolean doorsOpen;
 
     public TileMap(
             TileType[][] tiles,
@@ -82,7 +83,56 @@ public final class TileMap {
     }
 
     public boolean isWalkable(int row, int column) {
-        return contains(row, column) && tiles[row][column].isWalkable();
+        if (!contains(row, column)) {
+            return false;
+        }
+        if (tiles[row][column] == TileType.DOOR) {
+            return doorsOpen;
+        }
+        return tiles[row][column].isWalkable();
+    }
+
+    /** Indica se o tile existe e pode ser saltado (sem permitir parar sobre ele). */
+    public boolean isJumpable(int row, int column) {
+        return contains(row, column) && tiles[row][column].isJumpable();
+    }
+
+    /** Paredes e portas fechadas bloqueiam a visão; equipamentos são baixos e não bloqueiam. */
+    public boolean blocksVision(int row, int column) {
+        if (!contains(row, column)) {
+            return true;
+        }
+        TileType tile = tiles[row][column];
+        return tile == TileType.WALL || (tile == TileType.DOOR && !doorsOpen);
+    }
+
+    public boolean doorsOpen() {
+        return doorsOpen;
+    }
+
+    public boolean hasDoors() {
+        for (TileType[] row : tiles) {
+            for (TileType tile : row) {
+                if (tile == TileType.DOOR) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Abre todas as portas. Retorna falso se não há portas ou se já estavam abertas. */
+    public boolean openDoors() {
+        if (doorsOpen || !hasDoors()) {
+            return false;
+        }
+        doorsOpen = true;
+        return true;
+    }
+
+    /** Cópia com as mesmas tiles e as portas fechadas, para não alterar o mapa original. */
+    public TileMap copy() {
+        return new TileMap(tiles, tileSize, playerStartRow, playerStartColumn);
     }
 
     public boolean canOccupy(double x, double y, double width, double height) {

@@ -2,6 +2,7 @@ package br.edu.unex.sentinela.rendering;
 
 import br.edu.unex.sentinela.game.NavigationStatus;
 import br.edu.unex.sentinela.entity.Enemy;
+import br.edu.unex.sentinela.navigation.AStarPathfinder;
 import br.edu.unex.sentinela.navigation.GridPosition;
 import java.util.List;
 import javafx.scene.canvas.GraphicsContext;
@@ -64,10 +65,11 @@ final class WorldPainter {
 
     void drawEnemyNavigation(Enemy enemy, double tileSize, RenderLayout layout) {
         graphics.save();
-        Color identity = Color.web(enemy.type().color());
+        Color identity = AiPalette.identity(enemy.type());
         graphics.setGlobalAlpha(0.6);
         drawPathSegments(enemy.agent().path(), tileSize, layout, identity, 2.0 * layout.scale());
         graphics.setStroke(identity);
+        drawJumpArcs(enemy.agent().path(), tileSize, layout);
         graphics.setLineWidth(Math.max(1.0, layout.scale()));
         double inset = 8.0 * layout.scale();
         graphics.strokeRect(tileX(enemy.destination(), tileSize, layout) + inset,
@@ -128,6 +130,30 @@ final class WorldPainter {
         }
     }
 
+    /** Desenha um arco tracejado sobre cada salto da rota (custo 3 no A*). */
+    private void drawJumpArcs(List<GridPosition> path, double tileSize, RenderLayout layout) {
+        double scale = layout.scale();
+        graphics.setLineWidth(Math.max(1.0, 1.5 * scale));
+        graphics.setLineDashes(4.0 * scale, 3.0 * scale);
+        for (int index = 1; index < path.size(); index++) {
+            GridPosition start = path.get(index - 1);
+            GridPosition end = path.get(index);
+            if (!AStarPathfinder.isJump(start, end)) {
+                continue;
+            }
+            double startX = tileCenterX(start, tileSize, layout);
+            double startY = tileCenterY(start, tileSize, layout);
+            double endX = tileCenterX(end, tileSize, layout);
+            double endY = tileCenterY(end, tileSize, layout);
+            double peak = tileSize * 0.75 * scale;
+            graphics.beginPath();
+            graphics.moveTo(startX, startY);
+            graphics.quadraticCurveTo((startX + endX) / 2.0, (startY + endY) / 2.0 - peak, endX, endY);
+            graphics.stroke();
+        }
+        graphics.setLineDashes();
+    }
+
     private void drawPathSegment(
             GridPosition start,
             GridPosition end,
@@ -140,6 +166,10 @@ final class WorldPainter {
         double endX = tileCenterX(end, tileSize, layout);
         double endY = tileCenterY(end, tileSize, layout);
 
+        if (AStarPathfinder.isJump(start, end)) {
+            // O salto é desenhado como arco em drawJumpArcs, não como corredor.
+            return;
+        }
         if (start.row() == end.row()) {
             double left = Math.min(startX, endX);
             graphics.fillRect(

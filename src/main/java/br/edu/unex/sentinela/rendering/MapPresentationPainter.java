@@ -1,5 +1,6 @@
 package br.edu.unex.sentinela.rendering;
 
+import br.edu.unex.sentinela.game.Difficulty;
 import br.edu.unex.sentinela.game.GameWorld;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -21,11 +22,20 @@ final class MapPresentationPainter {
     private static final Color TEXT = Color.web("#e9f5ff");
     private static final Color MUTED = Color.web("#87a5b8");
     private static final Color SUCCESS = Color.web("#52e889");
+    private static final Color CAPTURED = Color.web("#ef476f");
+    private static final Color[] DIFFICULTY_COLORS = {
+        Color.web("#5ee0a0"), Color.web("#ffd166"), Color.web("#ff5878")
+    };
+    private static final Color BRIEFING_DIM = Color.web("#020811", 0.68);
+    private static final Color COMPLETION_DIM = Color.web("#020811", 0.58);
+    private static final Color CAPTURE_DIM = Color.web("#1a0208", 0.62);
+    private static final Color PAUSE_DIM = Color.web("#020811", 0.50);
 
     private final GraphicsContext graphics;
     private final Font titleFont = Font.font("Monospaced", FontWeight.BOLD, 18.0);
     private final Font headingFont = Font.font("Monospaced", FontWeight.BOLD, 12.0);
     private final Font valueFont = Font.font("Monospaced", FontWeight.NORMAL, 10.0);
+    private final Font logoFont = Font.font("Monospaced", FontWeight.BOLD, 28.0);
 
     private int displayedMapNumber = -1;
     private long introStartedAt;
@@ -55,9 +65,11 @@ final class MapPresentationPainter {
         graphics.scale(layout.scale(), layout.scale());
         RenderLayout logicalLayout = layout.logicalCoordinates();
         if (!sessionStarted) {
-            drawBriefing(logicalLayout, now);
+            drawBriefing(logicalLayout, now, world.difficulty());
         } else if (world.escapeCompleted()) {
             drawCompletion(logicalLayout);
+        } else if (world.captured()) {
+            drawCapture(logicalLayout, now, world.difficulty());
         } else if (paused) {
             drawPause(logicalLayout);
         } else {
@@ -90,23 +102,23 @@ final class MapPresentationPainter {
         graphics.setGlobalAlpha(1.0);
     }
 
-    private void drawBriefing(RenderLayout layout, long now) {
+    private void drawBriefing(RenderLayout layout, long now, Difficulty difficulty) {
         double width = 470.0;
-        double height = 260.0;
+        double height = 300.0;
         double x = layout.mapX() + (layout.mapWidth() - width) / 2.0;
         double y = layout.mapY() + (layout.mapHeight() - height) / 2.0;
         double pulse = (Math.sin(now / 1_000_000_000.0 * 3.0) + 1.0) / 2.0;
 
-        graphics.setFill(Color.web("#020811", 0.68));
+        graphics.setFill(BRIEFING_DIM);
         graphics.fillRect(layout.mapX(), layout.mapY(), layout.mapWidth(), layout.mapHeight());
         drawPanel(x, y, width, height, BORDER);
 
         graphics.setTextAlign(TextAlignment.CENTER);
         graphics.setFill(BORDER);
         graphics.setFont(headingFont);
-        graphics.fillText("PROTOCOLO DE NAVEGAÇÃO AUTÔNOMA", x + width / 2.0, y + 31.0);
+        graphics.fillText("PROTOCOLO DE SEGURANÇA ATIVO", x + width / 2.0, y + 31.0);
         graphics.setFill(TEXT);
-        graphics.setFont(Font.font("Monospaced", FontWeight.BOLD, 28.0));
+        graphics.setFont(logoFont);
         graphics.fillText("ESCAPE LAB", x + width / 2.0, y + 70.0);
 
         graphics.setFill(MUTED);
@@ -114,7 +126,7 @@ final class MapPresentationPainter {
         graphics.fillText("OBJETIVO", x + width / 2.0, y + 101.0);
         graphics.setFill(TEXT);
         graphics.fillText(
-                "ATRAVESSE OS TRÊS SETORES E ALCANCE AS SAÍDAS VERDES",
+                "PEGUE O CARTÃO, ABRA A PORTA E ALCANCE A SAÍDA DOS TRÊS SETORES",
                 x + width / 2.0,
                 y + 124.0,
                 width - 36.0
@@ -122,22 +134,24 @@ final class MapPresentationPainter {
 
         graphics.setFill(MUTED);
         graphics.fillText(
-                "WASD/SETAS  •  MOVER     ESC  •  PAUSAR     TAB  •  DEBUG",
+                "WASD  MOVER   •   SHIFT  AGACHAR   •   ESC  PAUSA   •   TAB  DEBUG   •   F2  MODO",
                 x + width / 2.0,
                 y + 162.0,
                 width - 30.0
         );
         graphics.fillText(
-                "3 ROBÔS A* • CONTATO COM INIMIGO: -100 PONTOS",
+                "4 ROBÔS VEEM E OUVEM VOCÊ  •  CONTATO: -100 PONTOS",
                 x + width / 2.0,
                 y + 188.0,
                 width - 36.0
         );
 
+        drawDifficultyChoice(difficulty, x + width / 2.0, y + 222.0);
+
         graphics.setGlobalAlpha(0.58 + pulse * 0.42);
         graphics.setFill(SUCCESS);
         graphics.setFont(headingFont);
-        graphics.fillText("PRESSIONE ENTER PARA INICIAR", x + width / 2.0, y + 226.0);
+        graphics.fillText("PRESSIONE ENTER PARA INICIAR", x + width / 2.0, y + 272.0);
         graphics.setGlobalAlpha(1.0);
     }
 
@@ -179,17 +193,21 @@ final class MapPresentationPainter {
         );
         graphics.setFill(MUTED);
         graphics.setFont(valueFont);
-        graphics.fillText("LOCALIZE A SAÍDA VERDE", x + width / 2.0, y + 64.0);
+        graphics.fillText(
+                world.cardPosition().isPresent() ? "PEGUE O CARTÃO E ALCANCE A SAÍDA" : "LOCALIZE A SAÍDA VERDE",
+                x + width / 2.0,
+                y + 64.0
+        );
         graphics.setGlobalAlpha(1.0);
     }
 
     private void drawCompletion(RenderLayout layout) {
         double width = 390.0;
-        double height = 128.0;
+        double height = 146.0;
         double x = layout.mapX() + (layout.mapWidth() - width) / 2.0;
         double y = layout.mapY() + (layout.mapHeight() - height) / 2.0;
 
-        graphics.setFill(Color.web("#020811", 0.58));
+        graphics.setFill(COMPLETION_DIM);
         graphics.fillRect(layout.mapX(), layout.mapY(), layout.mapWidth(), layout.mapHeight());
         drawPanel(x, y, width, height, SUCCESS);
         graphics.setTextAlign(TextAlignment.CENTER);
@@ -201,16 +219,62 @@ final class MapPresentationPainter {
         graphics.fillText("FUGA CONCLUÍDA", x + width / 2.0, y + 61.0);
         graphics.setFill(MUTED);
         graphics.setFont(valueFont);
+        graphics.setFill(SUCCESS);
+        graphics.setFont(headingFont);
+        graphics.fillText("SISTEMA DE SEGURANÇA DESLIGADO", x + width / 2.0, y + 86.0);
+        graphics.setFill(MUTED);
+        graphics.setFont(valueFont);
         graphics.fillText(
                 "OS TRÊS SETORES FORAM FINALIZADOS",
                 x + width / 2.0,
-                y + 87.0
+                y + 107.0
         );
         graphics.fillText(
                 "PRESSIONE 1 PARA REINICIAR A DEMONSTRAÇÃO",
                 x + width / 2.0,
-                y + 106.0
+                y + 126.0
         );
+    }
+
+    private void drawCapture(RenderLayout layout, long now, Difficulty difficulty) {
+        double width = 390.0;
+        double height = 166.0;
+        double x = layout.mapX() + (layout.mapWidth() - width) / 2.0;
+        double y = layout.mapY() + (layout.mapHeight() - height) / 2.0;
+        double pulse = (Math.sin(now / 1_000_000_000.0 * 3.0) + 1.0) / 2.0;
+
+        graphics.setFill(CAPTURE_DIM);
+        graphics.fillRect(layout.mapX(), layout.mapY(), layout.mapWidth(), layout.mapHeight());
+        drawPanel(x, y, width, height, CAPTURED);
+        graphics.setTextAlign(TextAlignment.CENTER);
+        graphics.setFill(CAPTURED);
+        graphics.setFont(headingFont);
+        graphics.fillText("ALARME DE SEGURANÇA", x + width / 2.0, y + 28.0);
+        graphics.setFill(TEXT);
+        graphics.setFont(titleFont);
+        graphics.fillText("CAPTURADO", x + width / 2.0, y + 61.0);
+        graphics.setFill(MUTED);
+        graphics.setFont(valueFont);
+        graphics.fillText("OS ROBÔS DE SEGURANÇA TE PEGARAM", x + width / 2.0, y + 87.0);
+        graphics.setGlobalAlpha(0.58 + pulse * 0.42);
+        graphics.setFill(CAPTURED);
+        graphics.setFont(headingFont);
+        graphics.fillText("ENTER PARA RECOMEÇAR", x + width / 2.0, y + 110.0);
+        graphics.setGlobalAlpha(1.0);
+        drawDifficultyChoice(difficulty, x + width / 2.0, y + 140.0);
+    }
+
+    // Seletor de nível: ← → troca antes de começar ou depois da captura.
+    private void drawDifficultyChoice(Difficulty difficulty, double centerX, double y) {
+        graphics.setTextAlign(TextAlignment.CENTER);
+        graphics.setFill(MUTED);
+        graphics.setFont(valueFont);
+        graphics.fillText("DIFICULDADE  (← →)", centerX, y);
+        String left = difficulty.ordinal() > 0 ? "◀  " : "   ";
+        String right = difficulty.ordinal() < Difficulty.values().length - 1 ? "  ▶" : "   ";
+        graphics.setFill(DIFFICULTY_COLORS[difficulty.ordinal()]);
+        graphics.setFont(headingFont);
+        graphics.fillText(left + difficulty.label() + right, centerX, y + 22.0);
     }
 
     private void drawPause(RenderLayout layout) {
@@ -219,7 +283,7 @@ final class MapPresentationPainter {
         double x = layout.mapX() + (layout.mapWidth() - width) / 2.0;
         double y = layout.mapY() + (layout.mapHeight() - height) / 2.0;
 
-        graphics.setFill(Color.web("#020811", 0.50));
+        graphics.setFill(PAUSE_DIM);
         graphics.fillRect(layout.mapX(), layout.mapY(), layout.mapWidth(), layout.mapHeight());
         drawPanel(x, y, width, height, BORDER);
         graphics.setTextAlign(TextAlignment.CENTER);

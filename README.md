@@ -12,19 +12,152 @@ No Windows (PowerShell):
 .\mvnw.cmd clean javafx:run
 ```
 
-O Maven Wrapper baixa automaticamente o Maven e as dependências do JavaFX. Pressione `ENTER` no briefing inicial. O jogador azul-esverdeado é controlado por WASD ou pelas setas direcionais. O robô amarelo usa o A* para navegar até o tile do jogador, utilizado nesta etapa como destino dinâmico. A rota é atualizada quando esse destino muda. Use `ESC` para pausar, `1`, `2` e `3` para trocar o laboratório, `TAB` para mostrar ou ocultar os painéis de diagnóstico e `F11` para alternar a tela cheia.
+O Maven Wrapper baixa automaticamente o Maven e as dependências do JavaFX. Pressione `ENTER` no briefing inicial.
 
-## Três tipos de inimigos e penalidade
+| Tecla | Ação |
+| --- | --- |
+| WASD ou setas | mover o jogador |
+| `SHIFT` | andar agachado: metade da velocidade e passos mais silenciosos |
+| `F2` | alternar entre a IA completa e a demonstração do A* das entregas anteriores |
+| `TAB` | mostrar ou ocultar os painéis de depuração |
+| `ESC` | pausar |
+| `1`, `2`, `3` | abrir um laboratório específico |
+| `ENTER` | começar e, depois de capturado, recomeçar |
+| `←` `→` | no briefing ou depois da captura, escolher a dificuldade |
+| `F11` | tela cheia |
 
-Cada setor possui três robôs simultâneos, identificados pela cor e pelo nome:
+## Objetivo
+
+Em cada laboratório a saída fica atrás de uma porta de segurança trancada. O jogador precisa pegar o cartão de acesso, que fica perto do robô guarda, e depois chegar à saída. Pegar o cartão faz barulho e abre as portas do setor. Na saída do terceiro laboratório o sistema de segurança é desligado e a fuga termina.
+
+A partida começa com 1.000 pontos e cada novo contato com um robô desconta 100. Com zero pontos o jogador é capturado e pode recomeçar com `ENTER`.
+
+## Inteligência dos robôs
+
+Os robôs não sabem onde o jogador está. Cada um percebe o ambiente pelos próprios sensores, guarda o que percebeu na memória e decide o que fazer. O A* continua responsável apenas por calcular o caminho até o destino escolhido.
+
+```text
+percepção (visão e audição) -> memória e suspeita -> decisão (FSM ou árvore) -> A* -> movimento
+```
+
+### Arquétipos
+
+| Robô | Papel | Rotina | Decisão | Visão | Audição |
+| --- | --- | --- | --- | --- | --- |
+| Perseguidor (amarelo) | Guarda | parado no posto, vigiando o cartão | FSM | 8 tiles, 70° | 1,3 |
+| Patrulheiro (roxo) | Patrulha | percorre quatro pontos | FSM | 7 tiles, 90° | 1,0 |
+| Interceptador (vermelho) | Batedor | ronda uma área e segue ruídos | Árvore de comportamento | 6 tiles, 110° | 1,5 |
+| Saltador (azul) | Saltador | ronda perto das bancadas e salta um equipamento | FSM | 7 tiles, 80° | 1,0 |
+
+A diferença entre eles está no comportamento: o guarda quase não sai do posto, a patrulha cobre os corredores, o batedor investiga qualquer ruído e, na perseguição, mira dois tiles à frente do jogador, e o saltador corta caminho por cima das bancadas.
+
+### Percepção
+
+- **Visão:** o robô vê o jogador se ele estiver dentro do alcance e do ângulo do cone e se nenhuma parede ou porta fechada estiver no caminho. A linha de visão é verificada percorrendo o segmento entre os dois pontos. Equipamentos são baixos e não bloqueiam a visão.
+- **Audição:** andando, o jogador faz um ruído a cada 0,45 s com alcance de 3,5 tiles; agachado, o alcance cai para 1,5 tile. Pegar o cartão faz um ruído de 7 tiles e as portas, ao abrir, de 6 tiles. Cada robô ouve até `alcance do ruído × sensibilidade`.
+
+### Memória e suspeita
+
+Cada percepção vira uma evidência com posição, instante, origem (visão, audição ou rádio) e confiança. A confiança diminui com o tempo: `c = c0 × e^(-0,20 × idade)`. Quando o jogador some de vista, a última posição vista fica congelada; o robô não continua seguindo a posição real atrás da parede.
+
+A suspeita vai de 0 a 100. Ver o jogador de longe soma 25 por segundo, cada ruído novo soma 12 e cada relato de rádio soma 25. Sem estímulo, ela cai 10 por segundo. Os níveis usam histerese para não ficarem trocando:
+
+| Nível | Entra | Sai |
+| --- | --- | --- |
+| Atenção | suspeita ≥ 25 | suspeita ≤ 15 |
+| Investigação | suspeita ≥ 60 | suspeita ≤ 40 |
+| Combate | jogador visto a menos de 6 tiles | jogador a mais de 8 tiles ou fora de vista |
+
+### Máquina de estados (Aula 07)
+
+Guarda, patrulha e saltador usam uma FSM com uma classe por estado, cada uma com `enter`, `update` e `exit`. As transições acontecem somente dentro do `update` do estado atual e seguem a prioridade: ameaça primeiro, depois pistas.
+
+| Estado | O que faz | Sai quando |
+| --- | --- | --- |
+| VIGIAR / PATRULHAR | rotina; em atenção, para e olha para a origem da pista | vê o jogador ou a suspeita chega à investigação |
+| INVESTIGAR | vai até a pista e olha em volta por 2 s | vê o jogador, não acha nada ou surge outra pista |
+| PERSEGUIR | corre até o tile onde viu o jogador | toca o jogador ou perde o contato |
+| ATACAR | depois do toque, para por 1,2 s | o tempo acaba |
+| PROCURAR | revista os pontos escolhidos pela Utility AI por até 12 s | vê o jogador ou o prazo termina |
+| RETORNAR | volta ao posto ou à rota | chega |
+| CERCAR SAÍDA | viu o jogador, mas não há vaga de ataque: vigia a porta da saída | consegue vaga ou passa 6 s sem contato |
+
+O A* é chamado no `enter` de cada estado e, na perseguição, no máximo a cada 0,5 s.
+
+### Árvore de comportamento
+
+O interceptador usa uma árvore com seletor reativo, para comparar com a FSM. A cada quadro os ramos são testados em ordem de prioridade:
+
+```text
+Seletor
+├── Sequência: tocou o jogador? -> RECUAR
+├── Sequência: contato confirmado? -> tem vaga de ataque? -> INTERCEPTAR
+├── Sequência: pista válida? -> INVESTIGAR PISTA
+└── RONDAR
+```
+
+Quando um ramo mais prioritário assume, a ação anterior é cancelada e libera o que tinha reservado, como a vaga de ataque.
+
+### Utility AI na busca
+
+Ao perder o jogador, o robô escolhe onde procurar dando uma nota para cada ponto candidato (a última posição vista, cruzamentos e becos a até 6 tiles dela):
+
+```text
+P = 0,45 × evidência + 0,35 × não verificado - 0,20 × custo
+```
+
+Pontos sem caminho ou reservados por outro robô são descartados antes da nota. O custo vem do próprio A*.
+
+### Cooperação e blackboard
+
+Os robôs compartilham um blackboard:
+
+- **Rádio:** quem vê o jogador publica um relato. Os outros recebem 0,6 s depois e registram a posição relatada, não a posição atual. O mesmo relato nunca é contado duas vezes.
+- **Reservas:** na busca, cada ponto é reservado por um robô, para dois robôs não revistarem o mesmo lugar.
+- **Vagas de ataque:** só um número limitado de robôs persegue ao mesmo tempo. Quem fica sem vaga vai cercar a saída.
+
+### Diretor de IA e dificuldade dinâmica
+
+O diretor não dá informação aos robôs. Ele mede a pressão sobre o jogador uma vez por segundo:
+
+```text
+q = 0,50 × contatos recentes + 0,30 × pontos perdidos + 0,20 × robôs a até 5 tiles
+q suavizado = 0,20 × q + 0,80 × q suavizado anterior
+```
+
+Com pressão alta por 5 s ele reduz as vagas de ataque; com pressão baixa por 10 s ele aumenta. As vagas ficam entre 1 e 3, e entre dois ajustes passam pelo menos 10 s.
+
+### Depuração
+
+Sem `TAB` a tela fica limpa para jogar: aparecem só o cone de visão de cada robô, as ondas de som e um "?" ou "!" sobre o robô que desconfiou ou viu o jogador. Com `TAB` aparecem também as rotas, o estado e a barra de suspeita acima de cada robô, os nós visitados pelo último A*, os valores g, h e f, a lista de robôs com técnica e estado, o diretor, o blackboard, as notas da Utility AI e as últimas decisões tomadas com o motivo.
+
+### Níveis de dificuldade
+
+No briefing, `←` e `→` escolhem o nível. O nível define a faixa; o diretor de IA continua ajustando dentro dela.
+
+| Parâmetro | Fácil | Normal | Difícil |
+| --- | --- | --- | --- |
+| Velocidade dos robôs | × 0,85 | × 1,0 | × 1,15 |
+| Alcance da visão | × 0,8 | × 1,0 | × 1,2 |
+| Proteção depois de um toque | 3,0 s | 2,0 s | 1,5 s |
+| Vagas de ataque do diretor | 1 a 2 | 1 a 3 | 2 a 3 |
+
+### Demonstração do A* (F2)
+
+As atividades de A* e A* dinâmico continuam disponíveis com `F2`. Nesse modo os robôs voltam ao comportamento daquelas entregas: sabem onde o jogador está e não usam percepção. Ele serve só para demonstrar a navegação.
+
+## Tipos de inimigos no modo de demonstração do A*
+
+No modo `F2`, cada setor possui quatro robôs simultâneos, identificados pela cor e pelo nome:
 
 - **Perseguidor amarelo:** usa A* para alcançar o tile atual do jogador; velocidade de 100 pixels por segundo.
 - **Patrulheiro roxo:** usa A* para percorrer ciclicamente quatro pontos fixos do laboratório, independentemente do jogador; velocidade de 80 pixels por segundo.
 - **Interceptador vermelho:** usa A* para alcançar até dois tiles à frente do jogador na direção do movimento real. A previsão para antes de paredes, equipamentos e limites; quando o jogador para, o destino volta ao tile atual dele. Velocidade de 120 pixels por segundo.
+- **Saltador azul:** usa A* para alcançar o tile atual do jogador, mas pode saltar por cima de **um** equipamento quando há piso livre do outro lado. Andar um tile custa 1 e o salto, que avança dois tiles, custa 3. Paredes, dois equipamentos seguidos e pousos fora do piso continuam bloqueados. Durante o salto ele não recalcula a rota; a nova busca espera o pouso. Velocidade de 90 pixels por segundo.
 
-Os três usam o mesmo algoritmo de busca, com rotas e destinos independentes e intervalo mínimo de 200 milissegundos entre buscas de cada robô. Os mapas mostram as rotas dos três; o minimapa identifica suas posições por cor. Os diagnósticos principais de destino e passos continuam acompanhando o perseguidor amarelo.
+Os quatro usam a mesma implementação do A*, com rotas e destinos independentes. O saltador usa o modo `AStarPathfinder.withEquipmentJumps()`, que acrescenta os saltos como vizinhos de custo 3. A heurística Manhattan continua admissível, pois o salto custa 1,5 por tile percorrido, nunca menos que 1. Todos respeitam o intervalo mínimo de 200 milissegundos entre buscas de cada robô. Os mapas mostram as rotas dos quatro, com os saltos desenhados como arcos tracejados; o minimapa identifica suas posições por cor. Os diagnósticos principais de destino e passos continuam acompanhando o perseguidor amarelo.
 
-A partida começa com **1.000 pontos**. Cada novo contato entre jogador e inimigo desconta **100 pontos**, sem deixar o total negativo. Permanecer encostado no mesmo inimigo não gera novas penalidades: é preciso se separar e tocar novamente. Cada inimigo contabiliza seu contato independentemente. A pontuação e o total de penalidades são mantidos ao trocar de setor. Chegar a zero pontos não encerra a partida. Os pontos aparecem no cabeçalho, e o painel de diagnóstico mostra também a quantidade de penalidades.
+Permanecer encostado no mesmo inimigo não gera novas penalidades: é preciso se separar e tocar novamente. Cada inimigo contabiliza seu contato independentemente. A pontuação e o total de penalidades são mantidos ao trocar de setor. Os pontos aparecem no cabeçalho, e o painel de diagnóstico mostra também a quantidade de penalidades.
 
 ## Testes
 
@@ -32,7 +165,9 @@ A partida começa com **1.000 pontos**. Cada novo contato entre jogador e inimig
 .\mvnw.cmd clean verify
 ```
 
-A suíte atual possui 77 testes automatizados cobrindo entrada, movimento, mapas, progressão, colisões, A*, animação, layout, assets, perseguição, patrulha, interceptação e penalidades por contato.
+A suíte atual possui 213 testes automatizados. Além de entrada, movimento, mapas, colisões, A*, saltos, animação, layout e penalidades, eles cobrem visão e oclusão, audição, memória e suspeita com histerese, transições da FSM, ramos da árvore de comportamento, notas da Utility AI, rádio e reservas do blackboard, ajustes do diretor de IA, portas e cartão, captura e a demonstração do A*.
+
+Versões usadas: Java 25, JavaFX 25.0.5, JUnit 6.1.3 e Maven 3.10.1 (baixado pelo Maven Wrapper).
 
 ## Situação atual
 
@@ -158,11 +293,12 @@ Quando uma nova busca é realizada, o caminho exibido também é atualizado.
 13. No terceiro mapa, alcance a última saída e confirme a mensagem `FUGA CONCLUÍDA`.
 14. Use `1`, `2` e `3` somente se quiser abrir diretamente um mapa para demonstração.
 
-## Limites desta etapa
+## Limites conhecidos
 
-Os obstáculos continuam fixos durante a execução. Ainda não foram implementados obstáculos dinâmicos, custos diferentes por terreno, previsão do movimento do jogador ou deslocamento diagonal do robô.
-
-A rota é recalculada quando o destino muda de tile, respeitando o intervalo mínimo entre buscas. Pequenos movimentos dentro do mesmo tile não executam novamente o A*.
+- As portas só abrem; nenhuma volta a fechar durante a partida.
+- O movimento continua em quatro direções, sem diagonais.
+- Os parâmetros de suspeita, alcance e pressão são valores iniciais, a serem calibrados nos playtests.
+- Os robôs não colidem entre si; só o contato com o jogador é verificado.
 
 ## Participantes da implementação
 

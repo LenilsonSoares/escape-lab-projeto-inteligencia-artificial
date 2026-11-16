@@ -23,10 +23,12 @@ public final class InputManager {
     );
 
     private final Set<KeyCode> pressedKeys = EnumSet.noneOf(KeyCode.class);
-    private boolean debugVisible = true;
+    private boolean debugVisible;
     private boolean startRequested;
     private boolean pauseToggleRequested;
     private int requestedMapNumber;
+    private boolean modeToggleRequested;
+    private int difficultyStep;
 
     public void attachTo(Scene scene) {
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
@@ -60,6 +62,16 @@ public final class InputManager {
             }
             return true;
         }
+        if (keyCode == KeyCode.F2) {
+            if (pressedKeys.add(KeyCode.F2)) {
+                modeToggleRequested = true;
+            }
+            return true;
+        }
+        if (keyCode == KeyCode.SHIFT) {
+            pressedKeys.add(KeyCode.SHIFT);
+            return true;
+        }
         int mapNumber = mapNumber(keyCode);
         if (mapNumber > 0) {
             if (pressedKeys.add(keyCode)) {
@@ -68,7 +80,14 @@ public final class InputManager {
             return true;
         }
         if (MOVEMENT_KEYS.contains(keyCode)) {
-            pressedKeys.add(keyCode);
+            // No briefing, esquerda e direita também escolhem a dificuldade.
+            if (pressedKeys.add(keyCode)) {
+                if (keyCode == KeyCode.LEFT || keyCode == KeyCode.A) {
+                    difficultyStep = -1;
+                } else if (keyCode == KeyCode.RIGHT || keyCode == KeyCode.D) {
+                    difficultyStep = 1;
+                }
+            }
             return true;
         }
         return false;
@@ -78,6 +97,8 @@ public final class InputManager {
         if (keyCode == KeyCode.TAB
                 || keyCode == KeyCode.ESCAPE
                 || keyCode == KeyCode.ENTER
+                || keyCode == KeyCode.F2
+                || keyCode == KeyCode.SHIFT
                 || mapNumber(keyCode) > 0
                 || MOVEMENT_KEYS.contains(keyCode)) {
             pressedKeys.remove(keyCode);
@@ -132,8 +153,29 @@ public final class InputManager {
         return requested;
     }
 
+    /** SHIFT pressionado: o jogador anda agachado, mais devagar e com menos ruído. */
+    public boolean sneaking() {
+        return pressedKeys.contains(KeyCode.SHIFT);
+    }
+
+    /** Entrega uma única vez o pedido de troca entre IA completa e demonstração do A*. */
+    public boolean consumeModeToggleRequested() {
+        boolean requested = modeToggleRequested;
+        modeToggleRequested = false;
+        return requested;
+    }
+
+    /** Entrega uma única vez o pedido de troca de dificuldade (-1, 0 ou +1). */
+    public int consumeDifficultyStep() {
+        int step = difficultyStep;
+        difficultyStep = 0;
+        return step;
+    }
+
     public void clear() {
         pressedKeys.clear();
+        modeToggleRequested = false;
+        difficultyStep = 0;
         startRequested = false;
         pauseToggleRequested = false;
         requestedMapNumber = 0;

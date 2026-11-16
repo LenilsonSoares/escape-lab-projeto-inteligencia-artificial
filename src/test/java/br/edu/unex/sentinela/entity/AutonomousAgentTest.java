@@ -211,6 +211,73 @@ class AutonomousAgentTest {
     }
 
     @Test
+    void jumpingAgentFliesOverEquipmentAndLandsCentered() {
+        TileMap corridor = mapOf(
+                "#####",
+                "#.E.#",
+                "#####"
+        );
+        AutonomousAgent agent = new AutonomousAgent(
+                corridor,
+                List.of(new GridPosition(1, 1), new GridPosition(1, 3)),
+                20.0,
+                40.0,
+                true
+        );
+
+        assertFalse(agent.isJumping());
+        agent.update(1.0);
+
+        // Metade do salto: está no ar, sobre o equipamento.
+        assertTrue(agent.isJumping());
+        assertEquals(0.5, agent.jumpProgress(), EPSILON);
+        assertEquals(new GridPosition(1, 2), agent.currentGridPosition());
+
+        agent.update(1.0);
+
+        assertFalse(agent.isJumping());
+        assertTrue(agent.hasReachedDestination());
+        assertPosition(agent, 130.0, 50.0);
+        assertTrue(corridor.canOccupy(agent.x(), agent.y(), agent.size(), agent.size()));
+    }
+
+    @Test
+    void onlyJumpingAgentsAcceptJumpOverEquipmentAndNeverOverWalls() {
+        TileMap corridor = mapOf(
+                "#######",
+                "#.E.#.#",
+                "#######"
+        );
+        List<GridPosition> overEquipment = List.of(new GridPosition(1, 1), new GridPosition(1, 3));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new AutonomousAgent(corridor, overEquipment, 20.0, 40.0));
+        assertThrows(IllegalArgumentException.class,
+                () -> new AutonomousAgent(corridor,
+                        List.of(new GridPosition(1, 3), new GridPosition(1, 5)), 20.0, 40.0, true));
+    }
+
+    @Test
+    void routeCannotBeReplacedInTheMiddleOfAJump() {
+        TileMap corridor = mapOf(
+                "#####",
+                "#.E.#",
+                "#####"
+        );
+        AutonomousAgent agent = new AutonomousAgent(
+                corridor,
+                List.of(new GridPosition(1, 1), new GridPosition(1, 3)),
+                20.0,
+                40.0,
+                true
+        );
+        agent.update(0.5);
+
+        assertThrows(IllegalStateException.class,
+                () -> agent.replacePath(List.of(new GridPosition(1, 2))));
+    }
+
+    @Test
     void rejectsNegativeDeltaTime() {
         TileMap tileMap = openMap(2, 2);
         AutonomousAgent agent = new AutonomousAgent(
@@ -234,5 +301,26 @@ class AutonomousAgentTest {
             Arrays.fill(row, TileType.LAB_FLOOR);
         }
         return new TileMap(tiles, 40, 0, 0);
+    }
+
+    /** '#' = parede, '.' = piso, 'E' = equipamento. */
+    private static TileMap mapOf(String... rows) {
+        TileType[][] tiles = new TileType[rows.length][rows[0].length()];
+        int startRow = -1;
+        int startColumn = -1;
+        for (int row = 0; row < rows.length; row++) {
+            for (int column = 0; column < rows[row].length(); column++) {
+                tiles[row][column] = switch (rows[row].charAt(column)) {
+                    case '#' -> TileType.WALL;
+                    case 'E' -> TileType.EQUIPMENT;
+                    default -> TileType.LAB_FLOOR;
+                };
+                if (startRow < 0 && tiles[row][column] == TileType.LAB_FLOOR) {
+                    startRow = row;
+                    startColumn = column;
+                }
+            }
+        }
+        return new TileMap(tiles, 40, startRow, startColumn);
     }
 }

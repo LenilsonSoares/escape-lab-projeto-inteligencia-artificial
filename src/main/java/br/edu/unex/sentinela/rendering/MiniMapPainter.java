@@ -23,12 +23,16 @@ final class MiniMapPainter {
     private static final Color WALL = Color.web("#4a6275");
     private static final Color EQUIPMENT = Color.web("#88465a");
     private static final Color EXIT = Color.web("#52e889");
+    private static final Color DOOR_CLOSED = Color.web("#d63c4a");
+    private static final Color DOOR_OPEN = Color.web("#3fbf74");
+    private static final Color CARD = Color.web("#22e3f2");
     private static final Color BORDER = Color.web("#2c6a83");
     private static final Color PLAYER = Color.web("#38d9a9");
     private static final Color DESTINATION = Color.web("#ffd166");
 
     private final GraphicsContext graphics;
     private TileMap cachedTileMap;
+    private boolean cachedDoorsOpen;
     private int cachedWidth;
     private int cachedHeight;
     private WritableImage cachedBase;
@@ -47,6 +51,9 @@ final class MiniMapPainter {
             drawPath(world, x, y, width, height);
             drawDestination(world, x, y, width, height);
         }
+        if (!world.cardCollected() && world.cardPosition().isPresent()) {
+            drawMarker(world.cardPosition().get(), CARD, world.tileMap(), x, y, width, height, 3.0);
+        }
         drawMarker(
                 playerPosition(world),
                 PLAYER,
@@ -58,7 +65,7 @@ final class MiniMapPainter {
                 5.0
         );
         for (Enemy enemy : world.enemies()) {
-            drawMarker(enemy.agent().currentGridPosition(), Color.web(enemy.type().color()),
+            drawMarker(enemy.agent().currentGridPosition(), AiPalette.identity(enemy.type()),
                     world.tileMap(), x, y, width, height, 4.0);
         }
     }
@@ -85,6 +92,7 @@ final class MiniMapPainter {
 
     private void ensureBase(TileMap tileMap, int width, int height) {
         if (cachedTileMap == tileMap
+                && cachedDoorsOpen == tileMap.doorsOpen()
                 && cachedWidth == width
                 && cachedHeight == height
                 && cachedBase != null) {
@@ -101,7 +109,7 @@ final class MiniMapPainter {
         double cellHeight = (double) height / tileMap.rows();
         for (int row = 0; row < tileMap.rows(); row++) {
             for (int column = 0; column < tileMap.columns(); column++) {
-                cacheGraphics.setFill(tileColor(tileMap.tileAt(row, column)));
+                cacheGraphics.setFill(tileColor(tileMap.tileAt(row, column), tileMap.doorsOpen()));
                 cacheGraphics.fillRect(
                         column * cellWidth + 0.5,
                         row * cellHeight + 0.5,
@@ -120,6 +128,7 @@ final class MiniMapPainter {
         cachedBase = new WritableImage(width, height);
         canvas.snapshot(parameters, cachedBase);
         cachedTileMap = tileMap;
+        cachedDoorsOpen = tileMap.doorsOpen();
         cachedWidth = width;
         cachedHeight = height;
     }
@@ -190,12 +199,13 @@ final class MiniMapPainter {
         return new GridPosition(row, column);
     }
 
-    private static Color tileColor(TileType tileType) {
+    static Color tileColor(TileType tileType, boolean doorsOpen) {
         return switch (tileType) {
             case LAB_FLOOR -> FLOOR;
             case WALL -> WALL;
             case EQUIPMENT -> EQUIPMENT;
             case EXIT -> EXIT;
+            case DOOR -> doorsOpen ? DOOR_OPEN : DOOR_CLOSED;
         };
     }
 

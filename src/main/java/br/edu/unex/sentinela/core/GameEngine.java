@@ -66,8 +66,18 @@ public final class GameEngine extends AnimationTimer {
 
     private void processInput() {
         if (inputManager.consumeStartRequested()) {
+            if (world.captured()) {
+                world.restart();
+            }
             sessionStarted = true;
             paused = false;
+        }
+        int difficultyStep = inputManager.consumeDifficultyStep();
+        if (difficultyStep != 0 && (!sessionStarted || world.captured())) {
+            world.changeDifficulty(difficultyStep);
+        }
+        if (inputManager.consumeModeToggleRequested()) {
+            world.toggleMode();
         }
         if (sessionStarted && inputManager.consumePauseToggleRequested()) {
             paused = !paused;
@@ -84,7 +94,7 @@ public final class GameEngine extends AnimationTimer {
 
     private void update(double simulationDeltaTime, double frameTime) {
         if (sessionStarted && !paused) {
-            world.update(simulationDeltaTime, currentInput);
+            world.update(simulationDeltaTime, currentInput, inputManager.sneaking());
         }
         metrics.recordFrame(frameTime);
     }

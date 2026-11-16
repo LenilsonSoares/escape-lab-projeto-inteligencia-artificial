@@ -1,6 +1,7 @@
 package br.edu.unex.sentinela.entity;
 
 import br.edu.unex.sentinela.game.TileMap;
+import br.edu.unex.sentinela.navigation.AStarPathfinder;
 import br.edu.unex.sentinela.navigation.GridPosition;
 import java.util.List;
 import java.util.Objects;
@@ -15,17 +16,32 @@ public final class AutonomousAgent {
     private final TileMap tileMap;
     private final double size;
     private final double speed;
+    private final boolean canJumpEquipment;
 
     private List<GridPosition> path;
     private double x;
     private double y;
     private int nextWaypointIndex;
+    private double speedFactor = 1.0;
 
     public AutonomousAgent(
             TileMap tileMap,
             List<GridPosition> path,
             double size,
             double speed
+    ) {
+        this(tileMap, path, size, speed, false);
+    }
+
+    /**
+     * @param canJumpEquipment permite rotas com saltos sobre um equipamento.
+     */
+    public AutonomousAgent(
+            TileMap tileMap,
+            List<GridPosition> path,
+            double size,
+            double speed,
+            boolean canJumpEquipment
     ) {
         this.tileMap = Objects.requireNonNull(tileMap, "O tilemap não pode ser nulo");
         if (!Double.isFinite(size) || size <= 0.0) {
@@ -37,6 +53,7 @@ public final class AutonomousAgent {
 
         this.size = size;
         this.speed = speed;
+        this.canJumpEquipment = canJumpEquipment;
         this.path = validateAndCopy(path);
 
         GridPosition start = this.path.get(0);
@@ -52,7 +69,7 @@ public final class AutonomousAgent {
 
         // A distância restante permite atravessar mais de um waypoint em um
         // quadro sem perder movimento quando o delta time é maior.
-        double remainingDistance = speed * deltaTime;
+        double remainingDistance = speed * speedFactor * deltaTime;
         if (!Double.isFinite(remainingDistance)) {
             throw new IllegalArgumentException("O deslocamento do agente deve ser finito");
         }
@@ -67,14 +84,17 @@ public final class AutonomousAgent {
             double distanceY = targetY - y;
             double distance = Math.hypot(distanceX, distanceY);
 
+            boolean jumpSegment = isCurrentSegmentJump();
+
             if (distance <= POSITION_EPSILON) {
-                moveTo(targetX, targetY);
+                moveTo(targetX, targetY, false);
                 nextWaypointIndex++;
                 continue;
             }
 
             if (distance <= remainingDistance + POSITION_EPSILON) {
-                moveTo(targetX, targetY);
+                // O pouso sempre é validado, pois o tile final é transitável.
+                moveTo(targetX, targetY, false);
                 remainingDistance = Math.max(0.0, remainingDistance - distance);
                 nextWaypointIndex++;
                 continue;
@@ -83,7 +103,8 @@ public final class AutonomousAgent {
             double movementRatio = remainingDistance / distance;
             moveTo(
                     x + distanceX * movementRatio,
-                    y + distanceY * movementRatio
+                    y + distanceY * movementRatio,
+                    jumpSegment
             );
             remainingDistance = 0.0;
         }
@@ -94,6 +115,9 @@ public final class AutonomousAgent {
     }
 
     public void replacePath(List<GridPosition> newPath) {
+        if (isJumping()) {
+            throw new IllegalStateException("A rota não pode ser trocada durante um salto");
+        }
         List<GridPosition> validatedPath = validateAndCopy(newPath);
         if (!validatedPath.get(0).equals(currentGridPosition())) {
             throw new IllegalArgumentException(
@@ -120,6 +144,44 @@ public final class AutonomousAgent {
     public void stop() {
         path = List.of();
         nextWaypointIndex = 0;
+    }
+
+    /** Verdadeiro enquanto o agente está no ar, entre a decolagem e o pouso. */
+    public boolean isJumping() {
+        return jumpProgress() > 0.0;
+    }
+
+    /**
+     * Fração já percorrida do salto atual, de 0 a 1. Fora de um salto,
+     * retorna 0. Usado pela renderização para desenhar o arco do pulo.
+     */
+    public double jumpProgress() {
+        if (!isCurrentSegmentJump()) {
+            return 0.0;
+        }
+        GridPosition takeOff = path.get(nextWaypointIndex - 1);
+        double travelled = Math.hypot(x - centeredX(takeOff), y - centeredY(takeOff));
+        if (travelled <= POSITION_EPSILON) {
+            return 0.0;
+        }
+        double length = takeOff.manhattanDistanceTo(path.get(nextWaypointIndex)) * tileMap.tileSize();
+        return Math.min(1.0, travelled / length);
+    }
+
+    /** Multiplica a velocidade base; usado quando o robô corre na perseguição. */
+    public void setSpeedFactor(double factor) {
+        if (!Double.isFinite(factor) || factor <= 0.0) {
+            throw new IllegalArgumentException("O fator de velocidade deve ser positivo");
+        }
+        speedFactor = factor;
+    }
+
+    public double currentSpeed() {
+        return speed * speedFactor;
+    }
+
+    public boolean canJumpEquipment() {
+        return canJumpEquipment;
     }
 
     public boolean hasReachedDestination() {
@@ -173,7 +235,9 @@ public final class AutonomousAgent {
             )) {
                 throw new IllegalArgumentException("O agente não cabe em um dos tiles da rota");
             }
-            if (previous != null && previous.manhattanDistanceTo(position) != 1) {
+            if (previous != null
+                    && previous.manhattanDistanceTo(position) != 1
+                    && !isValidJump(previous, position)) {
                 throw new IllegalArgumentException("Os pontos da rota devem ser vizinhos ortogonais");
             }
             previous = position;
@@ -181,8 +245,26 @@ public final class AutonomousAgent {
         return validatedPath;
     }
 
-    private void moveTo(double nextX, double nextY) {
-        if (!tileMap.canOccupy(nextX, nextY, size, size)) {
+    /** Salto válido: dois tiles em linha reta com um equipamento no meio. */
+    private boolean isValidJump(GridPosition from, GridPosition to) {
+        if (!canJumpEquipment || !AStarPathfinder.isJump(from, to)) {
+            return false;
+        }
+        int middleRow = (from.row() + to.row()) / 2;
+        int middleColumn = (from.column() + to.column()) / 2;
+        return tileMap.isJumpable(middleRow, middleColumn);
+    }
+
+    private boolean isCurrentSegmentJump() {
+        return nextWaypointIndex > 0
+                && nextWaypointIndex < path.size()
+                && AStarPathfinder.isJump(path.get(nextWaypointIndex - 1), path.get(nextWaypointIndex));
+    }
+
+    private void moveTo(double nextX, double nextY, boolean airborne) {
+        // No ar, o agente passa por cima do equipamento; a validade do salto
+        // já foi conferida em validateAndCopy e o pouso é checado normalmente.
+        if (!airborne && !tileMap.canOccupy(nextX, nextY, size, size)) {
             throw new IllegalStateException("O agente tentou sair da rota navegável");
         }
         x = nextX;

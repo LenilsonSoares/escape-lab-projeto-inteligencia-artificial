@@ -52,7 +52,7 @@ class GameWorldTest {
 
     @Test
     void createsValidRouteToInitialPlayerTile() {
-        GameWorld world = new GameWorld();
+        GameWorld world = navigationDemo();
         List<GridPosition> path = world.navigationPath();
         GridPosition initialPlayerTile = new GridPosition(
                 world.tileMap().playerStartRow(),
@@ -75,7 +75,7 @@ class GameWorldTest {
 
     @Test
     void autonomousAgentStopsAtPlayerTile() {
-        GameWorld world = new GameWorld();
+        GameWorld world = navigationDemo();
 
         for (int frame = 0;
                 frame < 1_000 && world.navigationStatus() == NavigationStatus.MOVING;
@@ -235,12 +235,12 @@ class GameWorldTest {
 
     @Test
     void changesLaboratoryAndRecreatesAValidInitialRoute() {
-        GameWorld world = new GameWorld();
+        GameWorld world = navigationDemo();
 
         world.selectMap(2);
 
         assertEquals(LaboratoryMap.DATA_CORE, world.currentMap());
-        assertEquals(LaboratoryMap.DATA_CORE.tileMap(), world.tileMap());
+        assertSameTiles(LaboratoryMap.DATA_CORE.tileMap(), world.tileMap());
         assertEquals(LaboratoryMap.DATA_CORE.agentStart(), world.navigationPath().get(0));
         assertEquals(
                 new GridPosition(
@@ -292,13 +292,21 @@ class GameWorldTest {
         assertFalse(world.escapeCompleted());
     }
 
+    // A saída fica atrás de uma porta: primeiro o jogador pega o cartão.
     private static void movePlayerToExit(GameWorld world) {
         LaboratoryMap expectedMap = world.currentMap();
+        GridPosition card = expectedMap.cardPosition().orElseThrow();
+        walkTo(world, expectedMap, card);
+        assertTrue(world.cardCollected());
+        walkTo(world, expectedMap, expectedMap.exitPosition());
+    }
+
+    private static void walkTo(GameWorld world, LaboratoryMap expectedMap, GridPosition target) {
         GridPosition start = playerPosition(world);
         List<GridPosition> route = new AStarPathfinder().findPath(
                 world.tileMap(),
                 start,
-                expectedMap.exitPosition()
+                target
         );
 
         assertFalse(route.isEmpty());
@@ -328,6 +336,20 @@ class GameWorldTest {
                     deltaTime,
                     new MovementInput(Math.signum(distanceX), Math.signum(distanceY))
             );
+        }
+    }
+
+    private static GameWorld navigationDemo() {
+        return new GameWorld(new AStarPathfinder());
+    }
+
+    private static void assertSameTiles(TileMap expected, TileMap actual) {
+        assertEquals(expected.rows(), actual.rows());
+        assertEquals(expected.columns(), actual.columns());
+        for (int row = 0; row < expected.rows(); row++) {
+            for (int column = 0; column < expected.columns(); column++) {
+                assertEquals(expected.tileAt(row, column), actual.tileAt(row, column));
+            }
         }
     }
 

@@ -30,9 +30,6 @@ target/
 # Local Java runtime
 /tmp/runtime/
 
-# Project documentation
-/docs/
-
 # IDEs
 .idea/
 .vscode/

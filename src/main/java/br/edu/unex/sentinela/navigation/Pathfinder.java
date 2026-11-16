@@ -11,7 +11,8 @@ public interface Pathfinder {
 
     /**
      * Retorna a rota incluindo origem e destino, ou uma lista vazia quando
-     * não existe caminho entre os pontos.
+     * não existe caminho entre os pontos. Pontos consecutivos são vizinhos
+     * ortogonais, exceto nos saltos sobre equipamentos, que avançam dois tiles.
      */
     List<GridPosition> findPath(
             TileMap tileMap,

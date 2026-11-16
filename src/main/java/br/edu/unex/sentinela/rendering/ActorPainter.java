@@ -18,6 +18,8 @@ final class ActorPainter {
 
     private static final double PLAYER_VISUAL_SIZE = 40.0;
     private static final double AGENT_VISUAL_SIZE = 40.0;
+    // Altura máxima do arco do salto, em pixels lógicos do mapa.
+    static final double JUMP_HEIGHT = 18.0;
     private static final Color ACTOR_SHADOW = Color.web("#01050b", 0.72);
     private static final Color PLAYER_LOCATOR = Color.web("#38d9a9", 0.62);
 
@@ -32,6 +34,7 @@ final class ActorPainter {
     private static final Color AGENT_LIGHT = Color.web("#ffd166");
     private static final Color AGENT_SCREEN = Color.web("#171205");
     private static final Color AGENT_INDICATOR_LIGHT = Color.web("#61efff");
+    private static final Font NAME_FONT = Font.font("Monospaced", 8.0);
 
     private final GraphicsContext graphics;
     private final DropShadow playerGlow = new DropShadow(10.0, Color.web("#38d9a9", 0.56));
@@ -40,6 +43,7 @@ final class ActorPainter {
     private final EnumMap<EnemyType, ActorAnimationState> agentAnimations = new EnumMap<>(EnemyType.class);
     private final ColorAdjust patrolTint = new ColorAdjust(-0.70, 0.25, 0.0, 0.0);
     private final ColorAdjust interceptorTint = new ColorAdjust(-0.20, 0.25, 0.0, 0.0);
+    private final ColorAdjust jumperTint = new ColorAdjust(0.90, 0.20, 0.05, 0.0);
 
     ActorPainter(GraphicsContext graphics) {
         this.graphics = graphics;
@@ -77,12 +81,13 @@ final class ActorPainter {
         AutonomousAgent agent = enemy.agent();
         ActorAnimationState agentAnimation = agentAnimations.computeIfAbsent(
                 enemy.type(), ignored -> new ActorAnimationState());
-        Color identity = Color.web(enemy.type().color());
+        Color identity = AiPalette.identity(enemy.type());
         agentGlow.setColor(identity);
         agentGlow.setInput(switch (enemy.type()) {
             case CHASER -> null;
             case PATROLLER -> patrolTint;
             case INTERCEPTOR -> interceptorTint;
+            case JUMPER -> jumperTint;
         });
         agentAnimation.sample(agent.x(), agent.y());
         double scale = layout.scale();
@@ -95,14 +100,16 @@ final class ActorPainter {
         double bob = Math.rint(agentAnimation.moving()
                 ? Math.abs(Math.sin(visualSeconds() * 7.2 + Math.PI)) * 1.25 * scale
                 : 0.0);
-        double spriteY = Math.rint(y - bob);
+        // No salto, o corpo sobe em arco enquanto a sombra fica no chão.
+        double lift = Math.rint(Math.sin(agent.jumpProgress() * Math.PI) * JUMP_HEIGHT * scale);
+        double spriteY = Math.rint(y - bob - lift);
 
         drawLocator(x, y, size, scale, identity);
-        drawShadow(x, y, size, bob, scale);
-        graphics.setFont(Font.font("Monospaced", 8.0 * scale));
-        graphics.setTextAlign(TextAlignment.CENTER);
-        graphics.setFill(identity);
-        graphics.fillText(enemy.type().displayName(), x + size / 2.0, y - 5.0 * scale);
+        drawShadow(x, y, size, bob + lift, scale);
+        // No modo IA a etiqueta completa (estado e suspeita) fica com o RobotLabelPainter.
+        if (!enemy.hasAi()) {
+            drawName(enemy.type().displayName(), x + size / 2.0, y - lift - 5.0 * scale, scale, identity);
+        }
         if (VisualAssets.PATHFINDER_ROBOT != null) {
             drawSprite(VisualAssets.PATHFINDER_ROBOT, x, spriteY, size, agentGlow,
                     agentAnimation.facingLeft(), agentAnimation.walkFrame(), scale);
@@ -114,6 +121,17 @@ final class ActorPainter {
         graphics.translate(x + (agentAnimation.facingLeft() ? size : 0.0), spriteY);
         graphics.scale(agentAnimation.facingLeft() ? -scale : scale, scale);
         drawFallbackAgent(agent.size());
+        graphics.restore();
+    }
+
+    private void drawName(String name, double x, double y, double scale, Color color) {
+        graphics.save();
+        graphics.translate(x, y);
+        graphics.scale(scale, scale);
+        graphics.setFont(NAME_FONT);
+        graphics.setTextAlign(TextAlignment.CENTER);
+        graphics.setFill(color);
+        graphics.fillText(name, 0.0, 0.0);
         graphics.restore();
     }
 

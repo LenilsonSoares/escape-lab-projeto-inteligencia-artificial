@@ -14,8 +14,17 @@ import java.util.Set;
 
 /**
  * Calcula o menor caminho em quatro direções usando A* e heurística Manhattan.
+ *
+ * <p>No modo com saltos, o agente também pode pular por cima de um único
+ * equipamento quando existe piso livre do outro lado. O salto avança dois
+ * tiles e custa {@value #JUMP_COST}; andar um tile custa {@value #WALK_COST}.
+ * Como o salto custa mais de 1 por tile percorrido, a distância Manhattan
+ * continua admissível: nunca superestima o custo real até o destino.
  */
 public final class AStarPathfinder implements Pathfinder {
+
+    public static final int WALK_COST = 1;
+    public static final int JUMP_COST = 3;
 
     private static final int[][] DIRECTIONS = {
         {-1, 0},
@@ -29,6 +38,55 @@ public final class AStarPathfinder implements Pathfinder {
             .thenComparingInt(SearchNode::heuristicCost)
             .thenComparingInt(node -> node.position().row())
             .thenComparingInt(node -> node.position().column());
+
+    /** Números da última busca, mostrados no painel de depuração. */
+    public record SearchStats(Set<GridPosition> visited, int pathCost, int heuristic, boolean found) {
+        public static final SearchStats NONE = new SearchStats(Set.of(), 0, 0, false);
+    }
+
+    private final boolean equipmentJumps;
+    private SearchStats lastSearch = SearchStats.NONE;
+
+    /** A* comum: somente passos ortogonais de custo 1. */
+    public AStarPathfinder() {
+        this(false);
+    }
+
+    private AStarPathfinder(boolean equipmentJumps) {
+        this.equipmentJumps = equipmentJumps;
+    }
+
+    /** A* do saltador: também considera saltos sobre um equipamento. */
+    public static AStarPathfinder withEquipmentJumps() {
+        return new AStarPathfinder(true);
+    }
+
+    public boolean allowsEquipmentJumps() {
+        return equipmentJumps;
+    }
+
+    public SearchStats lastSearch() {
+        return lastSearch;
+    }
+
+    /**
+     * Soma o custo de uma rota: passo comum = {@value #WALK_COST},
+     * salto de dois tiles = {@value #JUMP_COST}.
+     */
+    public static int costOf(List<GridPosition> path) {
+        Objects.requireNonNull(path, "A rota não pode ser nula");
+        int cost = 0;
+        for (int index = 1; index < path.size(); index++) {
+            cost += isJump(path.get(index - 1), path.get(index)) ? JUMP_COST : WALK_COST;
+        }
+        return cost;
+    }
+
+    /** Dois pontos consecutivos a dois tiles de distância formam um salto. */
+    public static boolean isJump(GridPosition from, GridPosition to) {
+        return from.manhattanDistanceTo(to) == 2
+                && (from.row() == to.row() || from.column() == to.column());
+    }
 
     @Override
     public List<GridPosition> findPath(
@@ -64,17 +122,18 @@ public final class AStarPathfinder implements Pathfinder {
             }
 
             if (current.position().equals(destination)) {
+                lastSearch = new SearchStats(Set.copyOf(closedNodes), current.pathCost(), initialHeuristic, true);
                 return reconstructPath(previousPositions, start, destination);
             }
 
-            for (GridPosition neighbor : neighborsOf(current.position())) {
-                if (closedNodes.contains(neighbor)
-                        || !tileMap.isWalkable(neighbor.row(), neighbor.column())) {
+            for (Move move : movesFrom(tileMap, current.position())) {
+                GridPosition neighbor = move.destination();
+                if (closedNodes.contains(neighbor)) {
                     continue;
                 }
 
-                // Todos os movimentos ortogonais possuem custo unitário.
-                int newCost = current.pathCost() + 1;
+                // g(n) acumula o custo do movimento: 1 ao andar, 3 ao saltar.
+                int newCost = current.pathCost() + move.cost();
                 int knownCost = pathCosts.getOrDefault(neighbor, Integer.MAX_VALUE);
                 if (newCost >= knownCost) {
                     continue;
@@ -88,18 +147,27 @@ public final class AStarPathfinder implements Pathfinder {
         }
 
         // Fila vazia significa que não existe rota transitável entre os pontos.
+        lastSearch = new SearchStats(Set.copyOf(closedNodes), 0, initialHeuristic, false);
         return List.of();
     }
 
-    private static List<GridPosition> neighborsOf(GridPosition position) {
-        List<GridPosition> neighbors = new ArrayList<>(DIRECTIONS.length);
+    private List<Move> movesFrom(TileMap tileMap, GridPosition position) {
+        List<Move> moves = new ArrayList<>(DIRECTIONS.length * 2);
         for (int[] direction : DIRECTIONS) {
-            neighbors.add(new GridPosition(
-                    position.row() + direction[0],
-                    position.column() + direction[1]
-            ));
+            int row = position.row() + direction[0];
+            int column = position.column() + direction[1];
+            if (tileMap.isWalkable(row, column)) {
+                moves.add(new Move(new GridPosition(row, column), WALK_COST));
+            } else if (equipmentJumps && tileMap.isJumpable(row, column)) {
+                // Salto: passa por cima do equipamento e pousa no tile seguinte.
+                int landingRow = row + direction[0];
+                int landingColumn = column + direction[1];
+                if (tileMap.isWalkable(landingRow, landingColumn)) {
+                    moves.add(new Move(new GridPosition(landingRow, landingColumn), JUMP_COST));
+                }
+            }
         }
-        return neighbors;
+        return moves;
     }
 
     private static List<GridPosition> reconstructPath(
@@ -129,6 +197,9 @@ public final class AStarPathfinder implements Pathfinder {
         if (!tileMap.isWalkable(position.row(), position.column())) {
             throw new IllegalArgumentException(description + " deve estar em um tile transitável");
         }
+    }
+
+    private record Move(GridPosition destination, int cost) {
     }
 
     private record SearchNode(

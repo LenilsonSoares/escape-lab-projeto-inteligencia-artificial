@@ -22,8 +22,9 @@ class TileMapTest {
     }
 
     @Test
-    void keepsAllWalkableTilesConnected() {
-        TileMap tileMap = TileMap.createLaboratory();
+    void keepsAllWalkableTilesConnectedWithDoorsOpen() {
+        TileMap tileMap = TileMap.createLaboratory().copy();
+        assertTrue(tileMap.openDoors());
         boolean[][] visited = new boolean[tileMap.rows()][tileMap.columns()];
         ArrayDeque<int[]> pending = new ArrayDeque<>();
         int walkableTiles = 0;
@@ -117,5 +118,39 @@ class TileMapTest {
                 1.0,
                 1.0
         ));
+    }
+
+    @Test
+    void wallsAndClosedDoorsBlockVisionButEquipmentDoesNot() {
+        TileMap tileMap = new TileMap(new TileType[][]{
+                {TileType.LAB_FLOOR, TileType.WALL, TileType.EQUIPMENT, TileType.DOOR}
+        }, 10, 0, 0);
+
+        assertFalse(tileMap.blocksVision(0, 0));
+        assertTrue(tileMap.blocksVision(0, 1));
+        assertFalse(tileMap.blocksVision(0, 2));
+        assertTrue(tileMap.blocksVision(0, 3));
+        assertTrue(tileMap.blocksVision(0, 4));
+
+        tileMap.openDoors();
+
+        assertFalse(tileMap.blocksVision(0, 3));
+        assertTrue(tileMap.blocksVision(0, 1));
+    }
+
+    @Test
+    void laboratoryCopyHasSameTilesAndClosedDoors() {
+        TileMap original = TileMap.createLaboratory();
+        TileMap copy = original.copy();
+
+        assertTrue(original.hasDoors());
+        assertFalse(copy.doorsOpen());
+        assertEquals(original.playerStartRow(), copy.playerStartRow());
+        assertEquals(original.playerStartColumn(), copy.playerStartColumn());
+        for (int row = 0; row < original.rows(); row++) {
+            for (int column = 0; column < original.columns(); column++) {
+                assertEquals(original.tileAt(row, column), copy.tileAt(row, column));
+            }
+        }
     }
 }

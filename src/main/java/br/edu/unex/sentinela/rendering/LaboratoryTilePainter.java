@@ -114,6 +114,7 @@ final class LaboratoryTilePainter {
                 if (tileMap.tileAt(row, column) == TileType.WALL) {
                     drawWall(tileMap, row, column, x, y, tileSize);
                 } else {
+                    // Porta entra como piso no cache; o DoorPainter desenha a porta a cada quadro.
                     drawFloor(row, column, x, y, tileSize);
                 }
             }

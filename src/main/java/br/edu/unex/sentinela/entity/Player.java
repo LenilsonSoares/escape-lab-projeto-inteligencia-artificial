@@ -37,6 +37,11 @@ public final class Player {
             double deltaTime,
             TileMap tileMap
     ) {
+        update(input, deltaTime, tileMap, 1.0);
+    }
+
+    /** @param speedFactor 1 andando normalmente; menor que 1 andando agachado. */
+    public void update(MovementInput input, double deltaTime, TileMap tileMap, double speedFactor) {
         if (!Double.isFinite(deltaTime) || deltaTime < 0.0) {
             throw new IllegalArgumentException("Delta time não pode ser negativo");
         }
@@ -46,8 +51,8 @@ public final class Player {
         double directionLength = Math.hypot(horizontal, vertical);
 
         if (directionLength > 0.0) {
-            double movementX = (horizontal / directionLength) * speed * deltaTime;
-            double movementY = (vertical / directionLength) * speed * deltaTime;
+            double movementX = (horizontal / directionLength) * speed * speedFactor * deltaTime;
+            double movementY = (vertical / directionLength) * speed * speedFactor * deltaTime;
             move(movementX, movementY, tileMap);
         }
     }

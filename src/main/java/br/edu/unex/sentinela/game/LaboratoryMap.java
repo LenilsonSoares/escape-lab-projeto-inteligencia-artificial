@@ -1,6 +1,7 @@
 package br.edu.unex.sentinela.game;
 
 import br.edu.unex.sentinela.navigation.GridPosition;
+import java.util.Optional;
 
 /**
  * Catálogo dos laboratórios usados para demonstrar a navegação.
@@ -14,32 +15,32 @@ public enum LaboratoryMap {
             "#.EE...#...EE.#.EE.#",
             "#.EE...#...EE.#.EE.#",
             "#......#...........#",
-            "###.##.#.##.####.#.#",
+            "###.##.#.##.#E##.#.#",
             "#..................#",
-            "#.###.###.###.#.##.#",
+            "#.###.#E#.###.#.##.#",
             "#..................#",
-            "###.#.###.#.####.###",
+            "###.#.###.#.#E##D###",
             "#...#.....#........#",
             "#.E.#.EEE.#.E.#.EE.#",
             "#.E.........E...EE.#",
-            "#A..#.....#........X",
+            "#A.K#.....#.......DX",
             "####################"
     ),
     DATA_CORE(
             "NÚCLEO DE DADOS",
             "####################",
-            "#P.......#.........X",
+            "#P.......#........DX",
             "#.EEE....#..EEE....#",
-            "#........#.........#",
+            "#........D.........#",
             "#..#####.#..#####..#",
             "#........#.........#",
             "####.##########.####",
             "#..................#",
-            "#.####..######..####",
+            "#.#E##..######..####",
             "#....#..........#..#",
-            "#....#..EEEE....#..#",
-            "#....#..........#..#",
-            "#.EE....######.....#",
+            "#....E..EEEE....#..#",
+            "#....#..........#.K#",
+            "#.EE....##E###.....#",
             "#.................A#",
             "####################"
     ),
@@ -55,10 +56,10 @@ public enum LaboratoryMap {
             "#..................#",
             "#.######....######.#",
             "#...#....E.....#...#",
-            "###.#.########.#.###",
-            "#...#........#.....#",
+            "###.#.########D#.###",
+            "#.K.#........#.....#",
             "#.###.######.#####.#",
-            "#A....E......E.....X",
+            "#A....E......E....DX",
             "####################"
     );
 
@@ -66,6 +67,7 @@ public enum LaboratoryMap {
     private final TileMap tileMap;
     private final GridPosition agentStart;
     private final GridPosition exitPosition;
+    private final GridPosition cardPosition;
 
     LaboratoryMap(String displayName, String... rows) {
         this.displayName = displayName;
@@ -73,6 +75,7 @@ public enum LaboratoryMap {
         this.tileMap = parsedMap.tileMap();
         this.agentStart = parsedMap.agentStart();
         this.exitPosition = parsedMap.exitPosition();
+        this.cardPosition = parsedMap.cardPosition();
     }
 
     public String displayName() {
@@ -85,6 +88,15 @@ public enum LaboratoryMap {
 
     public TileMap tileMap() {
         return tileMap;
+    }
+
+    /** Cópia nova com as portas fechadas; a partida abre as portas nela, não no mapa original. */
+    public TileMap createTileMap() {
+        return tileMap.copy();
+    }
+
+    public Optional<GridPosition> cardPosition() {
+        return Optional.of(cardPosition);
     }
 
     public GridPosition agentStart() {
@@ -115,6 +127,8 @@ public enum LaboratoryMap {
         GridPosition playerStart = null;
         GridPosition agentStart = null;
         GridPosition exitPosition = null;
+        GridPosition cardPosition = null;
+        boolean hasDoor = false;
 
         for (int row = 0; row < rows.length; row++) {
             if (rows[row].length() != columns) {
@@ -129,12 +143,19 @@ public enum LaboratoryMap {
                     agentStart = uniqueStart(agentStart, row, column, "agente");
                 } else if (symbol == 'X') {
                     exitPosition = uniqueStart(exitPosition, row, column, "saída");
+                } else if (symbol == 'K') {
+                    cardPosition = uniqueStart(cardPosition, row, column, "cartão");
+                } else if (symbol == 'D') {
+                    hasDoor = true;
                 }
             }
         }
 
         if (playerStart == null || agentStart == null || exitPosition == null) {
             throw new IllegalArgumentException("O mapa precisa dos pontos P, A e X");
+        }
+        if (cardPosition == null || !hasDoor) {
+            throw new IllegalArgumentException("O mapa precisa de um cartão K e de pelo menos uma porta D");
         }
 
         TileMap tileMap = new TileMap(
@@ -143,15 +164,16 @@ public enum LaboratoryMap {
                 playerStart.row(),
                 playerStart.column()
         );
-        return new ParsedMap(tileMap, agentStart, exitPosition);
+        return new ParsedMap(tileMap, agentStart, exitPosition, cardPosition);
     }
 
     private static TileType tileType(char symbol) {
-        // Legenda: ponto = piso, # = parede, E = equipamento e X = saída.
-        // P e A marcam apenas as posições iniciais sobre um piso transitável.
+        // Legenda: ponto = piso, # = parede, E = equipamento, D = porta e X = saída.
+        // P, A e K (cartão de acesso) marcam posições sobre um piso transitável.
         return switch (symbol) {
-            case '.', 'P', 'A' -> TileType.LAB_FLOOR;
+            case '.', 'P', 'A', 'K' -> TileType.LAB_FLOOR;
             case 'X' -> TileType.EXIT;
+            case 'D' -> TileType.DOOR;
             case '#' -> TileType.WALL;
             case 'E' -> TileType.EQUIPMENT;
             default -> throw new IllegalArgumentException("Símbolo desconhecido no mapa: " + symbol);
@@ -173,7 +195,8 @@ public enum LaboratoryMap {
     private record ParsedMap(
             TileMap tileMap,
             GridPosition agentStart,
-            GridPosition exitPosition
+            GridPosition exitPosition,
+            GridPosition cardPosition
     ) {
     }
 }

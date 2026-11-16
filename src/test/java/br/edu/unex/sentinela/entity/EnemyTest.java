@@ -57,6 +57,34 @@ class EnemyTest {
     }
 
     @Test
+    void jumperChasesPlayerAcrossEquipmentWithoutReplanningInTheAir() {
+        TileType[][] tiles = new TileType[3][7];
+        for (TileType[] row : tiles) {
+            java.util.Arrays.fill(row, TileType.WALL);
+        }
+        for (int col = 1; col <= 5; col++) {
+            tiles[1][col] = TileType.LAB_FLOOR;
+        }
+        tiles[1][3] = TileType.EQUIPMENT;
+        TileMap corridor = new TileMap(tiles, 40, 1, 1);
+
+        Enemy jumper = new Enemy(EnemyType.JUMPER, corridor, new GridPosition(1, 1),
+                new GridPosition(1, 5), List.of(), AStarPathfinder.withEquipmentJumps());
+        assertTrue(jumper.agent().canJumpEquipment());
+        assertEquals(new GridPosition(1, 5), jumper.agent().path().getLast());
+
+        boolean jumped = false;
+        for (int frame = 0; frame < 240; frame++) {
+            // O jogador alterna de tile o tempo todo, inclusive durante o salto.
+            GridPosition player = frame % 20 < 10 ? new GridPosition(1, 5) : new GridPosition(1, 4);
+            jumper.update(1.0 / 60.0, player, MovementInput.NONE);
+            jumped |= jumper.agent().isJumping();
+        }
+        assertTrue(jumped);
+        assertTrue(jumper.agent().currentGridPosition().column() >= 4);
+    }
+
+    @Test
     void interceptorAimsTwoWalkableTilesAhead() {
         assertEquals(new GridPosition(2, 4), Enemy.interceptDestination(map(),
                 new GridPosition(2, 2), new MovementInput(1, 0)));
