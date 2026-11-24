@@ -1,8 +1,30 @@
 # Contexto do projeto Escape Lab
 
-Este documento reúne as principais informações do projeto, o estado atual da implementação e os limites de escopo definidos para cada atividade da disciplina.
+Este documento registra o contexto das atividades iniciais da disciplina (temática, Game Loop, tilemap e A*), como estavam em 31/08/2026. As seções 5 a 10 descrevem aquela etapa. O funcionamento completo do jogo final está no [README](../README.md).
 
-Atualizado em: 31/08/2026.
+Atualizado em: 24/11/2026.
+
+## Estado atual (24/11/2026)
+
+O projeto final está implementado:
+
+- três laboratórios de 15 × 20 tiles, com cartão de acesso, portas de segurança e saída; na saída do terceiro, o sistema de segurança é desligado;
+- quatro robôs autônomos com visão (alcance, cone e oclusão) e audição (ruídos de passos, cartão e portas);
+- memória com evidências que envelhecem e suspeita com histerese;
+- máquina de estados (guarda, patrulha e saltador), árvore de comportamento (batedor) e Utility AI na busca pelo jogador;
+- blackboard com rádio, reservas de pontos de busca e vagas de ataque;
+- diretor de IA com dificuldade dinâmica e três níveis escolhidos pelo jogador;
+- A\* próprio com salto sobre equipamentos e demonstração das atividades de A\* pela tecla `F2`;
+- painéis de depuração e 213 testes automatizados.
+
+Os inimigos planejados no relatório de temática foram implementados assim:
+
+| Relatório de temática | Jogo final |
+| --- | --- |
+| Robô Guarda | Perseguidor (amarelo): guarda o cartão de acesso |
+| Robô Patrulha | Patrulheiro (roxo): percorre quatro pontos |
+| Drone de Vigilância | Interceptador (vermelho): batedor que segue ruídos |
+| — | Saltador (azul): salta sobre equipamentos |
 
 ## 1. Identificação
 
@@ -13,7 +35,7 @@ Atualizado em: 31/08/2026.
 - Gênero: ação e aventura em perspectiva top-down.
 - Tema: fuga de um laboratório de pesquisa.
 - Estilo visual planejado para o projeto final: pixel art.
-- Tecnologias: Java 21, JavaFX 21, Maven, JUnit 5, Git e GitHub.
+- Tecnologias: Java 25, JavaFX 25, Maven, JUnit 6, Git e GitHub (até 31/08/2026: Java 21, JavaFX 21 e JUnit 5).
 
 ## 2. Proposta do projeto
 
@@ -55,15 +77,15 @@ O projeto utiliza IA clássica. Machine Learning é opcional e não faz parte do
 
 O laboratório possui corredores, salas de pesquisa, depósitos, equipamentos, portas de segurança e áreas restritas. A ambientação representa um sistema de segurança fora de controle.
 
-Os inimigos planejados para etapas futuras são:
+Os inimigos planejados no relatório de temática eram:
 
-- **Robô Patrulha:** percorre corredores e futuramente poderá perseguir o jogador.
-- **Drone de Vigilância:** monitora áreas abertas e poderá investigar sons.
-- **Robô Guarda:** protege áreas importantes e poderá reagir a movimentações próximas.
+- **Robô Patrulha:** percorre corredores e persegue o jogador.
+- **Drone de Vigilância:** monitora áreas abertas e investiga sons.
+- **Robô Guarda:** protege áreas importantes e reage a movimentações próximas.
 
-Esses inimigos ainda não foram implementados. Eles pertencem às próximas atividades da disciplina.
+Eles foram implementados nas aulas seguintes; a correspondência com os robôs do jogo final está na seção "Estado atual".
 
-## 5. Estado atual da aplicação
+## 5. Aplicação em 31/08/2026
 
 A aplicação possui:
 
@@ -84,7 +106,7 @@ O pacote Java continua sendo `br.edu.unex.sentinela`. Essa identificação foi m
 
 ## 6. Tilemap implementado na Aula 03
 
-O laboratório é representado por uma matriz lógica de 15 linhas e 15 colunas. Cada tile possui 40 pixels, de modo que o mapa ocupa uma área de 600 × 600 pixels.
+Na entrega da Aula 03, o laboratório era representado por uma matriz lógica de 15 linhas e 15 colunas, com tiles de 40 pixels (600 × 600 pixels). No jogo final, os três laboratórios têm 15 linhas e 20 colunas.
 
 ### Tipos de tile
 
@@ -207,7 +229,7 @@ br.edu.unex.sentinela
 
 ## 10. Testes automatizados
 
-Validação realizada em 31/08/2026:
+Hoje a suíte tem 213 testes, todos passando (validação de 24/11/2026). Validação realizada em 31/08/2026:
 
 - 34 testes executados;
 - 0 falhas;
@@ -227,7 +249,7 @@ Distribuição atual:
 
 ## 11. Como executar
 
-Pré-requisito: JDK 21 ou superior configurado no `JAVA_HOME`.
+Pré-requisito: JDK 25 configurado no `JAVA_HOME`.
 
 Executar os testes:
 
@@ -247,24 +269,22 @@ Consultar alterações locais:
 git status
 ```
 
-## 12. Escopo das próximas aulas
+## 12. Escopo planejado em 31/08 e situação atual
 
-Ainda não estão implementados:
+Em 31/08/2026, estes recursos estavam reservados para as aulas seguintes. Situação em 24/11/2026:
 
-- custo de movimento por terreno;
-- outros algoritmos de busca, como BFS;
-- obstáculos dinâmicos e recálculo de rota;
-- inimigos funcionais;
-- visão, audição e investigação;
-- patrulha, perseguição e busca;
-- memória e níveis de suspeita;
-- máquinas de estado, Behavior Tree e Utility AI;
-- Blackboard e comunicação entre agentes;
-- cartões de acesso, portas com lógica e inventário;
-- combate, câmera e múltiplas fases;
-- sprites, animações e iluminação avançada.
-
-Esses recursos devem ser adicionados somente quando forem trabalhados nas respectivas aulas.
+- recálculo de rota com obstáculos dinâmicos (portas): implementado;
+- inimigos funcionais, com visão, audição e investigação: implementado;
+- patrulha, perseguição e busca: implementado;
+- memória e níveis de suspeita: implementado;
+- máquina de estados, Behavior Tree e Utility AI: implementado;
+- Blackboard e comunicação entre agentes: implementado;
+- cartões de acesso e portas com lógica: implementado;
+- múltiplas fases (três laboratórios): implementado;
+- sprites, animações e iluminação: implementado;
+- custo de movimento por terreno: não implementado (o único custo diferente é o salto do Saltador, que vale 3);
+- outros algoritmos de busca, como BFS: não implementado;
+- inventário, combate com armas e câmera móvel: fora do escopo do jogo.
 
 ## 13. Repositórios
 

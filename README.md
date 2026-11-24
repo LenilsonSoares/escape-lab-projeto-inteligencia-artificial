@@ -206,7 +206,7 @@ O projeto possui:
 - personagens orientados pela direção e com quatro estados visuais de caminhada;
 - tela de conclusão da fuga ao alcançar a saída do terceiro mapa;
 - estado final sem rota antiga, mostrando a saída e o caminho como concluídos;
-- testes automatizados com JUnit 5.
+- testes automatizados com JUnit 6.
 
 O piso metálico azul-escuro é transitável. As paredes modulares, os terminais e as cápsulas científicas são bloqueados. As imagens alteram somente a aparência; a propriedade lógica de cada tile continua definida pelo `TileType`.
 
